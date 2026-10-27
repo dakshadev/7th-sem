@@ -244,7 +244,15 @@ def process_single_text(
     special_tokens_mask = encoding["special_tokens_mask"].squeeze(0).bool()  # [L] bool
 
     # Eligible positions: valid non-padding tokens that are NOT special tokens (CLS, SEP, etc.)
-    eligible_mask = attention_mask & ~special_tokens_mask
+    # NOTE: fast tokenizers do not flag [UNK]/[MASK] in `special_tokens_mask`, so compare against
+    # the tokenizer's full special-token id list. Real WikiText contains rare characters that
+    # tokenize to [UNK]; selecting those as prediction targets is meaningless and violates the
+    # docs/INTERFACES.md batch contract (Person 1's validator rejects such batches).
+    special_ids = torch.tensor(
+        sorted({int(i) for i in tokenizer.all_special_ids}), dtype=torch.long
+    )
+    reserved_mask = torch.isin(input_ids, special_ids)
+    eligible_mask = attention_mask & ~special_tokens_mask & ~reserved_mask
 
     if mask_mode == "independent":
         masked_input_ids, prediction_mask = mask_tokens_independent(

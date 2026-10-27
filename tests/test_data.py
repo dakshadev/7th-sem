@@ -247,3 +247,27 @@ def test_get_dataset_loaders_offline(tokenizer, monkeypatch):
     val_batch = next(iter(val_loader))
     assert val_batch["input_ids"].shape == (1, 64)
 
+
+
+def test_reserved_special_ids_are_never_selected() -> None:
+    """Fast tokenizers leave [UNK] out of special_tokens_mask, so real text with rare
+    characters produced [UNK] prediction targets and Person 1's batch validator rejected
+    the batch. Eligibility must intersect the tokenizer's full special-id list."""
+    from src.data import get_bert_tokenizer, process_single_text
+
+    tokenizer = get_bert_tokenizer()
+    reserved = {int(i) for i in tokenizer.all_special_ids}
+    texts = [
+        "researchers recorded \u0d2a\u0d4d\u0d30\u0d1c\u0d15\u0d4d\u0d1f\u0d3f and \u0416\u0438\u0437\u043d\u044c scores",
+        "the quick brown \u0411\u0411\u0411 fox jumps over 42 lazy dogs and keeps running",
+        "a" * 12 + " \u4e2d\u6587 " + "b" * 12,
+    ]
+    for text in texts:
+        for mode in ("independent", "span"):
+            out = process_single_text(
+                text, tokenizer, max_length=64, mask_ratio=0.5, mask_mode=mode, seed=11
+            )
+            ids, selected = out["input_ids"], out["prediction_mask"]
+            offending = [i for i in range(len(ids)) if bool(selected[i]) and int(ids[i]) in reserved]
+            assert not offending, f"{mode} selected reserved ids at {offending}"
+            assert bool(selected.any()), f"{mode} selected no positions in a long text"

@@ -1,3 +1,6 @@
+# NOTE: cloud GPU runtimes (Colab/Kaggle) already ship a CUDA torch build. Installing this
+# file there replaces it with a CPU wheel (torch 2.11.0+cpu, cuda False). On those runtimes
+# install the other packages by name instead; keep torch out of the cloud install step.
 torch>=2.0.0
 transformers>=4.40.0
 datasets>=2.18.0
