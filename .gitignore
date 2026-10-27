@@ -1,0 +1,38 @@
+# Python and local environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+# Secrets and machine-local settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.vscode/
+.idea/
+# Large/downloaded artifacts (small curated results remain tracked)
+data/
+datasets/
+checkpoints/
+artifacts/
+.cache/
+wandb/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.parquet
+*.arrow
+# OS
+.DS_Store
+Thumbs.db
