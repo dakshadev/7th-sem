@@ -1,0 +1,260 @@
+[
+  {
+    "sample_id": 1,
+    "original_text": "senjo no valkyria 3 : unrecorded chronicles ( japanese : \u6226 \u5834 \u306e\u30a6\u30a1\u30eb\u30ad\u30e5\u30ea\u30a23, lit. valkyria of the battlefield 3 ), commonly referred to as valkyria chronicles iii outside japan, is a tactical role @ - @ playing video game developed by sega and media. vision for the playstation portable. released in january 2011 in japan, it is the third game in the valkyria series. employing the same fusion of tactical and real @ - @ time gameplay as its predecessors, the story runs parallel to the first game and follows the \" nameless \", a",
+    "independent": {
+      "corrupted_text": "[CLS] senjo no valkyria 3 : unrecorded chronicles [MASK] japanese [MASK] [MASK] \u5834 \u306e\u30a6\u30a1\u30eb\u30ad\u30e5\u30ea\u30a23, lit. valky [MASK] [MASK] the battlefield 3 [MASK], commonly [MASK] to as val [MASK]ria chronicles [MASK] outside japan, is a tactical role @ - @ playing video game developed by sega and media. vision [MASK] the playstation portable. released in [MASK] 2011 in [MASK], [MASK] is the third game in the valkyria series. employing the [MASK] fusion of tactical and real @ - [MASK] time gameplay [MASK] its predecessors, the story runs parallel to [MASK] first game and [MASK] the \" nameless \" [MASK] a [SEP]",
+      "masked_tokens": [
+        "(",
+        ":",
+        "\u6226",
+        "##ria",
+        "of",
+        ")",
+        "referred",
+        "##ky",
+        "iii",
+        "for",
+        "january",
+        "japan",
+        "it",
+        "same",
+        "@",
+        "as",
+        "the",
+        "follows",
+        ","
+      ],
+      "count": 19
+    },
+    "span": {
+      "corrupted_text": "[CLS] senjo no valkyria 3 : unrecorded chronicles ( japanese : \u6226 \u5834 \u306e\u30a6\u30a1\u30eb [MASK] [MASK] [MASK] [MASK]3, lit [MASK] [MASK] [MASK] [MASK] of the battlefield 3 [MASK], commonly referred to as valkyria [MASK] iii outside japan, is a tactical role @ - @ playing video game developed by sega [MASK] media. vision for the playstation portable. released in january 2011 in japan, it is the third game in the valkyria series. [MASK] [MASK] [MASK] [MASK] of tactical and real @ - @ [MASK] [MASK] as its predecessors, the story runs parallel to the first game and follows the \" nameless \" [MASK] [MASK] [SEP]",
+      "masked_tokens": [
+        "##\u30ad",
+        "##\u30e5",
+        "##\u30ea",
+        "##\u30a2",
+        ".",
+        "val",
+        "##ky",
+        "##ria",
+        ")",
+        "chronicles",
+        "and",
+        "employing",
+        "the",
+        "same",
+        "fusion",
+        "time",
+        "gameplay",
+        ",",
+        "a"
+      ],
+      "count": 19
+    }
+  },
+  {
+    "sample_id": 2,
+    "original_text": "the game began development in 2010, carrying over a large portion of the work done on valkyria chronicles ii. while it retained the standard features of the series, it also underwent multiple adjustments, such as making the game more forgiving for series newcomers. character designer raita honjou and composer hitoshi sakimoto both returned from previous entries, along with valkyria chronicles ii director takeshi ozawa. a large team of writers handled the script. the game ' s opening theme was sung by may ' n.",
+    "independent": {
+      "corrupted_text": "[CLS] the game [MASK] [MASK] in 2010, carrying over a large portion [MASK] [MASK] [MASK] done on val [MASK]ria chronicles [MASK] [MASK] while it [MASK] the standard features of the series [MASK] it [MASK] underwent [MASK] adjustments, such [MASK] making the game more forgiving for series newcomers [MASK] character designer raita honjou and composer hitoshi sakimoto both returned from previous entries, along with val [MASK]ria chronicles ii director takeshi ozawa. a large team of writers handled the script. [MASK] game ' s opening theme was sung by may ' n. [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]",
+      "masked_tokens": [
+        "began",
+        "development",
+        "of",
+        "the",
+        "work",
+        "##ky",
+        "ii",
+        ".",
+        "retained",
+        ",",
+        "also",
+        "multiple",
+        "as",
+        ".",
+        "##ky",
+        "the"
+      ],
+      "count": 16
+    },
+    "span": {
+      "corrupted_text": "[CLS] [MASK] [MASK] [MASK] [MASK] [MASK] 2010, carrying over a [MASK] portion of the [MASK] [MASK] [MASK] [MASK]kyria chronicles [MASK] [MASK] while it retained the standard features of the series, it also underwent multiple adjustments, such as making the game more forgiving for series newcomers. character [MASK] raita [MASK] [MASK] and composer hitoshi sa [MASK]oto both returned from previous entries, along with valkyria chronicles ii director takeshi ozawa. a large team of writers handled the script. the game ' s opening theme was sung by may ' n. [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]",
+      "masked_tokens": [
+        "the",
+        "game",
+        "began",
+        "development",
+        "in",
+        "large",
+        "work",
+        "done",
+        "on",
+        "val",
+        "ii",
+        ".",
+        "designer",
+        "hon",
+        "##jou",
+        "##kim"
+      ],
+      "count": 16
+    }
+  },
+  {
+    "sample_id": 3,
+    "original_text": "it met with positive sales in japan, and was praised by both japanese and western critics. after release, it received downloadable content, along with an expanded edition in november of that year. it was also adapted into manga and an original video animation series. due to low sales of valkyria chronicles ii, valkyria chronicles iii was not localized, but a fan translation compatible with the game ' s expanded edition was released in 2014. media. vision would return to the franchise with the development of valkyria : azure revolution for the playstation 4.",
+    "independent": {
+      "corrupted_text": "[CLS] it met with [MASK] [MASK] in japan, and was praised by [MASK] japanese and western critics. after release, it received downloadable content, along with an [MASK] edition in november of that year. it [MASK] [MASK] adapted into manga and an original video animation series. due to low [MASK] of valkyria chronicles ii [MASK] val [MASK]ria chronicles iii was [MASK] localized, but a fan translation compatible [MASK] the game ' s expanded edition was released in [MASK]. media. vision would return to the franchise with [MASK] [MASK] of [MASK]kyria : azure revolution for the [MASK] 4. [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]",
+      "masked_tokens": [
+        "positive",
+        "sales",
+        "both",
+        "expanded",
+        "was",
+        "also",
+        "sales",
+        ",",
+        "##ky",
+        "not",
+        "with",
+        "2014",
+        "the",
+        "development",
+        "val",
+        "playstation"
+      ],
+      "count": 16
+    },
+    "span": {
+      "corrupted_text": "[CLS] it met with positive sales in japan, and was praised by both japanese [MASK] western critics. after release, it received downloadable content, along with an expanded [MASK] in november of [MASK] [MASK]. it [MASK] [MASK] [MASK] [MASK] manga and an original video animation series. due to low sales of valkyria chronicles ii [MASK] [MASK]kyria chronicles iii was not localized, but a fan translation compatible with the game ' s expanded edition was released in 2014. media. vision would return to [MASK] [MASK] [MASK] [MASK] [MASK] of valkyria : azure revolution for the playstation 4 [MASK] [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]",
+      "masked_tokens": [
+        "and",
+        "edition",
+        "that",
+        "year",
+        "was",
+        "also",
+        "adapted",
+        "into",
+        ",",
+        "val",
+        "the",
+        "franchise",
+        "with",
+        "the",
+        "development",
+        "."
+      ],
+      "count": 16
+    }
+  },
+  {
+    "sample_id": 4,
+    "original_text": "as with previous valkyira chronicles games, valkyria chronicles iii is a tactical role @ - @ playing game where players take control of a military unit and take part in missions against enemy forces. stories are told through comic book @ - @ like panels with animated character portraits, with characters speaking partially through voiced speech bubbles and partially through unvoiced text. the player progresses through a series of linear missions, gradually unlocked as maps that can be freely scanned through and replayed as they are unlocked. the route to each story location on the map varies depending on an individual player ' s approach : when one option is selected,",
+    "independent": {
+      "corrupted_text": "[CLS] as [MASK] previous valky [MASK] chronicles games, valkyria [MASK] iii is a tactical role @ - @ [MASK] game where players take control of a military unit and take part in missions against enemy forces. stories are told through comic [MASK] @ - @ like panels with animated character portraits, with characters speaking [MASK] through voiced speech bubbles and [MASK] [MASK] unvoiced text. [MASK] player progresses through a series of [MASK] missions [MASK] gradually unlocked as maps that can be freely scanned through and replayed as they are unlocked. [MASK] route [MASK] each story location on the map varies [MASK] on [MASK] individual player [MASK] [MASK] approach : when one [MASK] [MASK] selected, [SEP]",
+      "masked_tokens": [
+        "with",
+        "##ira",
+        "chronicles",
+        "playing",
+        "book",
+        "partially",
+        "partially",
+        "through",
+        "the",
+        "linear",
+        ",",
+        "the",
+        "to",
+        "depending",
+        "an",
+        "'",
+        "s",
+        "option",
+        "is"
+      ],
+      "count": 19
+    },
+    "span": {
+      "corrupted_text": "[CLS] as with previous valkyira chronicles games, [MASK] [MASK] [MASK] [MASK] iii is a tactical role @ - @ playing game where players take control of a military unit and take part in missions against [MASK] [MASK] [MASK] [MASK] [MASK] told through comic book @ - @ [MASK] panels with animated character portraits, with characters speaking partially through voiced [MASK] bubbles and partially through unvoiced text. the player progresses through a series of [MASK] [MASK] [MASK] [MASK] unlocked as maps that can be freely scanned through and replayed as they are [MASK]. [MASK] route [MASK] each story location on the map varies [MASK] on an individual player ' s approach : when one option is selected, [SEP]",
+      "masked_tokens": [
+        "val",
+        "##ky",
+        "##ria",
+        "chronicles",
+        "enemy",
+        "forces",
+        ".",
+        "stories",
+        "are",
+        "like",
+        "speech",
+        "linear",
+        "missions",
+        ",",
+        "gradually",
+        "unlocked",
+        "the",
+        "to",
+        "depending"
+      ],
+      "count": 19
+    }
+  },
+  {
+    "sample_id": 5,
+    "original_text": "the game ' s battle system, the blitz system, is carried over directly from valkyira chronicles. during missions, players select each unit using a top @ - @ down perspective of the battlefield map : once a character is selected, the player moves the character around the battlefield in third @ - @ person. a character can only act once per @ - @ turn, but characters can be granted multiple turns at the expense of other characters ' turns. each character has a field and distance of movement limited by their action gauge. up to nine characters can be assigned to a single mission. during gameplay, characters will call out if something",
+    "independent": {
+      "corrupted_text": "[CLS] the [MASK] [MASK] [MASK] battle system, the blitz system, [MASK] carried over directly from valkyira chronicles. during missions, [MASK] select each unit using a top @ - @ down perspective of the battlefield map : once a [MASK] is [MASK], the [MASK] moves the character around the battlefield in [MASK] @ - @ person [MASK] a character can only act once per [MASK] - @ turn, but characters can [MASK] granted multiple turns at the [MASK] of other characters ' [MASK]. each character has a field and distance of movement limited by their [MASK] gauge. [MASK] to [MASK] characters can [MASK] assigned to a single mission. during gameplay, characters will call out [MASK] something [SEP]",
+      "masked_tokens": [
+        "game",
+        "'",
+        "s",
+        "is",
+        "players",
+        "character",
+        "selected",
+        "player",
+        "third",
+        ".",
+        "@",
+        "be",
+        "expense",
+        "turns",
+        "action",
+        "up",
+        "nine",
+        "be",
+        "if"
+      ],
+      "count": 19
+    },
+    "span": {
+      "corrupted_text": "[CLS] the game ' s battle system, the blitz [MASK], is carried over directly from valkyira chronicles. during missions, players select each unit using a top @ - @ down perspective of the battlefield map : once a [MASK] [MASK] [MASK] [MASK] [MASK] player moves the character around the battlefield in third @ - @ person. a character can only act once per [MASK] [MASK] [MASK] [MASK] [MASK] but characters [MASK] [MASK] granted multiple turns at the expense of other characters ' [MASK] [MASK] [MASK] [MASK] has a field and distance of movement limited by their action gauge. up to nine characters can be assigned to a [MASK] [MASK]. during gameplay, characters will call out if something [SEP]",
+      "masked_tokens": [
+        "system",
+        "character",
+        "is",
+        "selected",
+        ",",
+        "the",
+        "@",
+        "-",
+        "@",
+        "turn",
+        ",",
+        "can",
+        "be",
+        "turns",
+        ".",
+        "each",
+        "character",
+        "single",
+        "mission"
+      ],
+      "count": 19
+    }
+  }
+]

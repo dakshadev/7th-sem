@@ -1,0 +1,128 @@
+{
+  "dataset_name": "Salesforce/wikitext",
+  "config": "wikitext-2-raw-v1",
+  "split": "train",
+  "num_analyzed_samples": 3000,
+  "total_tokens_raw": 362002,
+  "total_tokens_truncated_128": 262728,
+  "unique_tokens_observed": 18547,
+  "vocab_size_total": 30522,
+  "vocab_coverage_ratio": 0.6077,
+  "raw_length_distribution": {
+    "mean": 120.67,
+    "std": 89.59,
+    "median": 109,
+    "min": 7,
+    "max": 647,
+    "p75": 177,
+    "p95": 286
+  },
+  "truncated_length_distribution": {
+    "mean": 87.58,
+    "median": 109,
+    "max": 128,
+    "fraction_truncated_at_128": 0.415
+  },
+  "top_20_tokens": [
+    {
+      "token": "the",
+      "id": 1996,
+      "count": 19764
+    },
+    {
+      "token": ",",
+      "id": 1010,
+      "count": 16516
+    },
+    {
+      "token": ".",
+      "id": 1012,
+      "count": 13214
+    },
+    {
+      "token": "of",
+      "id": 1997,
+      "count": 9096
+    },
+    {
+      "token": "@",
+      "id": 1030,
+      "count": 7990
+    },
+    {
+      "token": "and",
+      "id": 1998,
+      "count": 7945
+    },
+    {
+      "token": "in",
+      "id": 1999,
+      "count": 7107
+    },
+    {
+      "token": "to",
+      "id": 2000,
+      "count": 6003
+    },
+    {
+      "token": "a",
+      "id": 1037,
+      "count": 5764
+    },
+    {
+      "token": "\"",
+      "id": 1000,
+      "count": 4535
+    },
+    {
+      "token": "was",
+      "id": 2001,
+      "count": 3073
+    },
+    {
+      "token": "-",
+      "id": 1011,
+      "count": 3046
+    },
+    {
+      "token": "'",
+      "id": 1005,
+      "count": 2623
+    },
+    {
+      "token": "as",
+      "id": 2004,
+      "count": 2373
+    },
+    {
+      "token": "that",
+      "id": 2008,
+      "count": 2327
+    },
+    {
+      "token": "for",
+      "id": 2005,
+      "count": 2277
+    },
+    {
+      "token": "on",
+      "id": 2006,
+      "count": 2267
+    },
+    {
+      "token": "s",
+      "id": 1055,
+      "count": 2235
+    },
+    {
+      "token": "with",
+      "id": 2007,
+      "count": 2193
+    },
+    {
+      "token": "is",
+      "id": 2003,
+      "count": 1935
+    }
+  ]
+}

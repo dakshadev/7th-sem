@@ -1,0 +1,9 @@
+{
+  "accuracy": 0.24,
+  "macro_f1": 0.23298611111111112,
+  "majority_baseline": 0.28,
+  "train_samples": 200,
+  "test_samples": 50,
+  "num_classes": 4,
+  "note": "Baseline linear probe test using isotropic random features. Provides contract verification for train-only preprocessing and classification."
+}

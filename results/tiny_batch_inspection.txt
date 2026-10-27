@@ -1,0 +1,49 @@
+================================================================================
+TINY REAL BATCH INSPECTION ARTIFACT (docs/INTERFACES.md)
+================================================================================
+
+Batch Size: 4
+Sequence Length L: 128
+Total Non-padding Tokens: 475
+Total Masked Targets: 70
+Overall Mask Ratio: 0.1474
+
+CONTRACT INVARIANTS VERIFICATION:
+- input_ids shape: [4, 128], dtype: torch.int64
+- masked_input_ids shape: [4, 128], dtype: torch.int64
+- attention_mask shape: [4, 128], dtype: torch.bool
+- prediction_mask shape: [4, 128], dtype: torch.bool
+- prediction_mask excludes padding: True
+- prediction_mask excludes special tokens ([CLS], [SEP], etc.): True
+
+--------------------------------------------------------------------------------
+DECODED EXAMPLES:
+--------------------------------------------------------------------------------
+
+[Example 1]
+Original Text: senjo no valkyria 3 : unrecorded chronicles ( japanese : 戦 場 のウァルキュリア3, lit. valkyria of the battlefield 3 ), commonly referred to as valkyria chronicles iii outside japan, is a tactical role @ - @ playing video game developed by sega and media. vision for the playstation portable. released in january 2011 in japan, it is the third game in the valkyria series. employing the same fusion of tactical and real @ - @ time gameplay as its predecessors, the story runs parallel to the first game and follows the " nameless ", a
+Corrupted Text: [CLS] senjo [MASK] valky [MASK] 3 : unrecorded chronicles ( japanese : 戦 場 のウァ [MASK]キュリア3, lit [MASK] val [MASK]ria of the battlefield 3 ), commonly referred to as valkyria chronicles iii outside japan [MASK] is [MASK] tactical role @ - @ playing video game developed by sega and media. [MASK] [MASK] the [MASK] portable. released in january 2011 in [MASK], it is the third game [MASK] the valkyria series. employing the same fusion [MASK] tactical [MASK] real @ - @ [MASK] gameplay as [MASK] predecessors, the [MASK] runs parallel to the [MASK] game and follows the " nameless [MASK], a [SEP]
+Masked Positions: [3, 6, 22, 30, 32, 51, 53, 68, 69, 71, 79, 86, 97, 99, 104, 107, 111, 116, 124]
+Ground Truth Target Tokens: ['no', '##ria', '##ル', '.', '##ky', ',', 'a', 'vision', 'for', 'playstation', 'japan', 'in', 'of', 'and', 'time', 'its', 'story', 'first', '"']
+Target Count: 19
+
+[Example 2]
+Original Text: the game began development in 2010, carrying over a large portion of the work done on valkyria chronicles ii. while it retained the standard features of the series, it also underwent multiple adjustments, such as making the game more forgiving for series newcomers. character designer raita honjou and composer hitoshi sakimoto both returned from previous entries, along with valkyria chronicles ii director takeshi ozawa. a large team of writers handled the script. the game ' s opening theme was sung by may ' n.
+Corrupted Text: [CLS] [MASK] game began development in 2010, carrying over a large portion of the work [MASK] on valkyria chronicles ii. [MASK] [MASK] retained the [MASK] features of the series, it also underwent multiple adjustments, such as making the game more for [MASK] for series newcomers. character designer raita honjou and composer hitoshi sakim [MASK] both returned from previous [MASK] [MASK] [MASK] [MASK] val [MASK]ria [MASK] ii director takeshi ozawa. a large team of [MASK] handled the script. the game ' s opening [MASK] was sung [MASK] may ' n. [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]
+Masked Positions: [1, 16, 24, 25, 28, 47, 64, 69, 70, 71, 72, 74, 76, 88, 98, 101]
+Ground Truth Target Tokens: ['the', 'done', 'while', 'it', 'standard', '##giving', '##oto', 'entries', ',', 'along', 'with', '##ky', 'chronicles', 'writers', 'theme', 'by']
+Target Count: 16
+
+[Example 3]
+Original Text: it met with positive sales in japan, and was praised by both japanese and western critics. after release, it received downloadable content, along with an expanded edition in november of that year. it was also adapted into manga and an original video animation series. due to low sales of valkyria chronicles ii, valkyria chronicles iii was not localized, but a fan translation compatible with the game ' s expanded edition was released in 2014. media. vision would return to the franchise with the development of valkyria : azure revolution for the playstation 4.
+Corrupted Text: [CLS] [MASK] met [MASK] positive sales in japan, and was praised by both japanese and [MASK] critics [MASK] after release, [MASK] received downloadable content, along [MASK] an expanded edition in [MASK] of that year. it was also adapted into manga and an original video animation series. due to low sales of valkyria chronicles ii, valkyria chronicles iii was not localized, but a fan [MASK] compatible with [MASK] game ' s expanded edition was released [MASK] [MASK]. media. [MASK] would return to the [MASK] with the development of [MASK] [MASK]ria : azure [MASK] for the playstation 4. [SEP] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD] [PAD]
+Masked Positions: [1, 3, 16, 18, 22, 28, 33, 74, 77, 85, 86, 90, 95, 100, 101, 105]
+Ground Truth Target Tokens: ['it', 'with', 'western', '.', 'it', 'with', 'november', 'translation', 'the', 'in', '2014', 'vision', 'franchise', 'val', '##ky', 'revolution']
+Target Count: 16
+
+[Example 4]
+Original Text: as with previous valkyira chronicles games, valkyria chronicles iii is a tactical role @ - @ playing game where players take control of a military unit and take part in missions against enemy forces. stories are told through comic book @ - @ like panels with animated character portraits, with characters speaking partially through voiced speech bubbles and partially through unvoiced text. the player progresses through a series of linear missions, gradually unlocked as maps that can be freely scanned through and replayed as they are unlocked. the route to each story location on the map varies depending on an individual player ' s approach : when one option is selected,
+Corrupted Text: [CLS] as with previous [MASK]ky [MASK] chronicles games, val [MASK]ria chronicles iii is a tactical [MASK] @ - @ [MASK] game where players [MASK] control of a military unit and take part in missions against enemy forces. stories are told [MASK] [MASK] book @ [MASK] @ like panels with animated character portraits, with characters speaking partially through voiced speech [MASK] and partially through unvoiced text. the player progresses [MASK] a series of linear missions [MASK] gradually unlocked as maps [MASK] [MASK] [MASK] freely scanned through and replayed as they are unlocked. [MASK] [MASK] to each story location on the map varies depending on an individual [MASK] ' s approach : when one option [MASK] selected, [SEP]
+Masked Positions: [4, 6, 11, 18, 22, 26, 44, 45, 48, 64, 77, 83, 88, 89, 90, 102, 103, 116, 124]
+Ground Truth Target Tokens: ['val', '##ira', '##ky', 'role', 'playing', 'take', 'through', 'comic', '-', 'bubbles', 'through', ',', 'that', 'can', 'be', 'the', 'route', 'player', 'is']
+Target Count: 19

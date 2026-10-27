@@ -1,0 +1,62 @@
+{
+  "description": "Verification of representation geometry metrics across controlled structural regimes",
+  "sample_count_N": 100,
+  "embedding_dim_D": 256,
+  "regimes": {
+    "isotropic_healthy": {
+      "is_degenerate": false,
+      "status": "healthy",
+      "num_samples": 100,
+      "dimension": 256,
+      "effective_rank_singular": 93.62415359038728,
+      "effective_rank_covariance": 81.76467700018578,
+      "rank_ratio": 0.9362415359038728,
+      "mean_dimension_variance": 0.9937198403117027,
+      "min_dimension_variance": 0.6144779913082554,
+      "max_dimension_variance": 1.3007095765660404,
+      "dead_dimension_count": 0,
+      "dead_dimension_fraction": 0.0,
+      "mean_pairwise_cosine": -0.010081076753124453,
+      "std_pairwise_cosine": 0.06188745763665814,
+      "min_pairwise_cosine": -0.23510108343076602,
+      "max_pairwise_cosine": 0.19567851411890683,
+      "median_pairwise_cosine": -0.009776845010120267,
+      "p10_pairwise_cosine": -0.0893407873667323,
+      "p90_pairwise_cosine": 0.06906299304102129
+    },
+    "anisotropic_constrained": {
+      "is_degenerate": false,
+      "status": "healthy",
+      "num_samples": 100,
+      "dimension": 256,
+      "effective_rank_singular": 3.19557990132911,
+      "effective_rank_covariance": 2.01089259668129,
+      "rank_ratio": 0.0319557990132911,
+      "mean_dimension_variance": 0.5165421357449892,
+      "min_dimension_variance": 0.013693614971196274,
+      "max_dimension_variance": 4.824980285028824,
+      "dead_dimension_count": 0,
+      "dead_dimension_fraction": 0.0,
+      "mean_pairwise_cosine": -0.009690259337184383,
+      "std_pairwise_cosine": 0.6632932851996864,
+      "min_pairwise_cosine": -0.9997301746226277,
+      "max_pairwise_cosine": 0.9982499949649521,
+      "median_pairwise_cosine": -0.015692519673160203,
+      "p10_pairwise_cosine": -0.8905775970700096,
+      "p90_pairwise_cosine": 0.894249524601649
+    },
+    "collapsed_degenerate": {
+      "is_degenerate": true,
+      "status": "constant_representations_collapsed",
+      "num_samples": 100,
+      "dimension": 256,
+      "effective_rank_singular": 1.0,
+      "effective_rank_covariance": 1.0,
+      "mean_dimension_variance": 0.0,
+      "min_dimension_variance": 0.0,
+      "max_dimension_variance": 0.0,
+      "dead_dimension_count": 256,
+      "dead_dimension_fraction": 1.0
+    }
+  }
+}
