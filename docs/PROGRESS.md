@@ -84,3 +84,21 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Known limitations: single seed, bounded subset, no linear probe, no GPU throughput benchmark, objective losses not comparable.
 - Interface changes agreed with other owner: none; the span/independent masking fix (special-token eligibility) needs to land on `person2` — see `docs/PERSON2_REVIEW.md`.
 - Next action / owner: Person 1 — run the deferred AG News probe and a second seed; Person 2 — apply the masking fix, stop installing `torch` from `requirements.txt`, re-pin the notebook commit.
+
+## Frozen AG News probe — Kaggle T4 — 27 October 2026
+
+- Date / author / branch / commit: 2026-10-27 / Person 1 / `integration/person1-person2` / `c0f330a`
+- Runtime: Kaggle Tesla T4, torch 2.11.0+cu128, `cuda.is_available() == True`.
+- Probe: AG News, 4000 probe-train / 1000 held-out, scaler+classifier fit on train only, seed 42, `C=1.0`.
+- Measured: MLM 0.603 acc / 0.599 macro-F1; latent A 0.598 / 0.596; latent B 0.602 / 0.600; **random-init same-architecture reference 0.632 / 0.628**; majority baseline 0.274.
+- Interpretation: every trained student is BELOW the random reference, so 50 updates on 22,833 tokens produced no transfer improvement. The probe validates the harness, not the variants.
+- Evidence: `docs/PERSON1_PROBE.md`, `results/person1/probe_agnews_t4.json`.
+- Not run: second seed, probe hyperparameter search, token geometry.
+- Next action / owner: Person 1 — longer training budget plus a second seed before any between-variant claim.
+
+## Person 2 fixes landed — 27 October 2026
+
+- Branch `person2` fast-forwarded to `2273c01` (also published as `person2-fixes`).
+- `src/data.py`: eligibility now intersects `tokenizer.all_special_ids`; regression test fails without the fix and passes with it (22/22 Person 2 tests pass).
+- `notebooks/run_colab.ipynb`: installs dependencies by name instead of `requirements.txt` (which had replaced CUDA torch with `2.11.0+cpu`), asserts `torch.cuda.is_available()` with the accelerator-confirmation hint, pins `PINNED_COMMIT = 00b8dc8`, and the "runtime restart" cell is relabelled as a same-session reload with the real restart requirement documented.
+- `requirements.txt`: warns that cloud runtimes must not install torch from it.
