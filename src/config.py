@@ -181,7 +181,13 @@ class ObjectiveConfig:
 
 LEGACY_VARIANTS: dict[str, dict[str, Any]] = {
     "mlm": {"kind": "mlm", "label": "C"},
-    "latent_a": {"kind": "latent", "target": "final", "predictor": "attention", "loss": "mse", "label": "A"},
+    "latent_a": {
+        "kind": "latent",
+        "target": "final",
+        "predictor": "attention",
+        "loss": "mse",
+        "label": "A",
+    },
     "latent_b": {
         "kind": "latent",
         "target": "top2_normalized",
@@ -192,7 +198,7 @@ LEGACY_VARIANTS: dict[str, dict[str, Any]] = {
 }
 
 
-def _objective_from_dict(value: dict[str, Any]) -> "ObjectiveConfig":
+def _objective_from_dict(value: dict[str, Any]) -> ObjectiveConfig:
     """Accept either explicit components or the deprecated single `variant` key."""
     payload = dict(value)
     legacy = payload.pop("variant", None)
@@ -272,7 +278,16 @@ class ExperimentConfig:
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> ExperimentConfig:
-        allowed = {"model", "optimizer", "teacher", "mask", "objective", "run", "schema_version"}
+        allowed = {
+            "model",
+            "optimizer",
+            "teacher",
+            "mask",
+            "objective",
+            "run",
+            "schema_version",
+            "_note",  # free-form documentation carried in the config file; ignored
+        }
         extra = set(value) - allowed
         if extra:
             raise ValueError(f"unknown config keys: {sorted(extra)}")

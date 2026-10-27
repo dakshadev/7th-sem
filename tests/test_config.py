@@ -143,3 +143,16 @@ def test_component_ablations_differ_from_a_in_exactly_one_field() -> None:
                 ) if a != b
             ]
             assert differing == [override.popitem()[0]] or len(differing) == 1
+
+
+def test_config_ignores_documentation_note() -> None:
+    import pytest
+
+    from src.config import ExperimentConfig
+
+    config = ExperimentConfig.from_dict(
+        {"_note": "human-readable description", "mask": {"policy": "span"}}
+    )
+    assert config.mask.policy == "span"
+    with pytest.raises(ValueError, match="unknown config keys"):
+        ExperimentConfig.from_dict({"unexpected": 1})
