@@ -1,0 +1,5 @@
+{
+  "objective": {"variant": "mlm"},
+  "mask": {"policy": "independent", "ratio": 0.15, "span_length": 3},
+  "run": {"seed": 17, "token_budget": 5000000, "device": "cpu"}
+}

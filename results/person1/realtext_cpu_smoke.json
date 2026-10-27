@@ -1,0 +1,77 @@
+{
+  "purpose": "Bounded real WikiText training-path smoke only; not full pretraining, collapse/transfer conclusion or Person 2 data-pipeline completion",
+  "fixture_manifest": {
+    "purpose": "Tiny real-text integration fixture only, not the full Person 2 data pipeline or scientific experiment",
+    "dataset": "Salesforce/wikitext",
+    "config": "wikitext-103-raw-v1",
+    "dataset_revision_observed": "b08601e04326c79dfdd32d625aee71d232d685c3",
+    "revision_caveat": "Dataset-server rows response is not revision-pinned; response SHA256 is recorded for exact fixture identity.",
+    "tokenizer": "google-bert/bert-base-uncased",
+    "tokenizer_revision": "86b5e0934494bd15c9632b12f734a8a67f723594",
+    "tokenizer_sha256": "ce64fce797c24f68df90b40a3f74f579b336a493db14bd583fd520ea0d8c9a98",
+    "splits": {
+      "train": {
+        "url": "https://datasets-server.huggingface.co/rows?dataset=Salesforce%2Fwikitext&config=wikitext-103-raw-v1&split=train&offset=0&length=100",
+        "response_sha256": "bcb7cd70375c703ac04c79b2885307447fc3ddc3a7019361f98af3b22e3b5029",
+        "requested_rows": 100,
+        "nonempty_records": 75,
+        "tokens": 5115,
+        "boundary_policy": "One source row per sequence, truncated at 128 with CLS/SEP preserved; no cross-row or cross-split packing."
+      },
+      "validation": {
+        "url": "https://datasets-server.huggingface.co/rows?dataset=Salesforce%2Fwikitext&config=wikitext-103-raw-v1&split=validation&offset=0&length=40",
+        "response_sha256": "83075de15240638da94acb677d1f7652bcfe9d6ba6b127c8b64c3bb5c3990fb0",
+        "requested_rows": 40,
+        "nonempty_records": 27,
+        "tokens": 1637,
+        "boundary_policy": "One source row per sequence, truncated at 128 with CLS/SEP preserved; no cross-row or cross-split packing."
+      }
+    }
+  },
+  "torch": "2.9.1+cpu",
+  "device": "cpu",
+  "runs": {
+    "mlm": {
+      "updates": 20,
+      "tokens": 5471,
+      "masked_targets": 801,
+      "first_loss": 10.448954582214355,
+      "last_loss": 9.102029800415039,
+      "validation_loss": 9.613658880987087,
+      "training_seconds": 11.229473900000812,
+      "peak_allocated_cuda_bytes": null,
+      "checkpoint_resume": "passed",
+      "student_export": "passed",
+      "checkpoint_sha256": "197955e1b9b8e4dfacb7d8b2fe3c54ebbdf59b83cad4c4b11532a54cd314fb8b",
+      "artifact_dir": "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\artifacts\\person1-realtext-smoke\\mlm"
+    },
+    "latent_a": {
+      "updates": 20,
+      "tokens": 5471,
+      "masked_targets": 801,
+      "first_loss": 1.9598667621612549,
+      "last_loss": 1.3226516246795654,
+      "validation_loss": 1.348988351200809,
+      "training_seconds": 9.004770999999892,
+      "peak_allocated_cuda_bytes": null,
+      "checkpoint_resume": "passed",
+      "student_export": "passed",
+      "checkpoint_sha256": "72140ab13405d495adcdada4106eb6d3586087b436075fa337e850d0b5d82c9c",
+      "artifact_dir": "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\artifacts\\person1-realtext-smoke\\latent_a"
+    },
+    "latent_b": {
+      "updates": 20,
+      "tokens": 5471,
+      "masked_targets": 801,
+      "first_loss": 0.5555790662765503,
+      "last_loss": 0.44149476289749146,
+      "validation_loss": 0.4282782797803398,
+      "training_seconds": 5.410956700001407,
+      "peak_allocated_cuda_bytes": null,
+      "checkpoint_resume": "passed",
+      "student_export": "passed",
+      "checkpoint_sha256": "d7af8c2cac6007f4574eb8dfa0d2e2d782e943756c7b0b36824718eea7af5071",
+      "artifact_dir": "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\artifacts\\person1-realtext-smoke\\latent_b"
+    }
+  }
+}
