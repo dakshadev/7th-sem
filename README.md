@@ -6,7 +6,26 @@ This undergraduate research project investigates how target construction, maskin
 
 ## Current status — 27 October 2026
 
-Person 1's random small encoder, C/A/B objectives, fp32 runner, resumable checkpoints and export API are CPU-verified on `person1`: 25 deterministic CPU tests passed and one cloud-only CUDA resume test was skipped in the CPU environment. Two-update synthetic C/A/B diagnostics also completed on CPU; they are implementation checks, not research results. Person 2's data/evaluation pipeline, real-data integration and all cloud GPU runs remain pending. See [Person 1 implementation](docs/PERSON1_IMPLEMENTATION.md), [development evidence](docs/DEVELOPMENT_EVIDENCE.md), and [execution environment](docs/EXECUTION_ENVIRONMENT.md).
+The experimental system is built and has been run on a free GPU. What is missing is training
+budget, not infrastructure.
+
+| Area | State |
+|---|---|
+| Encoder, MLM control, latent recipes A/B, EMA teacher | Implemented and tested |
+| Component ablations D–G (one change at a time) | Configs + runner ready |
+| Data pipeline, masking policies, corpus statistics | Implemented (Person 2) |
+| Geometry metrics, frozen linear probe, ambiguity analysis | Implemented and run |
+| Checkpoint resume, standalone student export | Tested, including exact state parity |
+| Automated tests | 55 passed, 2 skipped (CUDA-only + integrated-tree skip) |
+| Lint | `ruff check src tests scripts` clean |
+| GPU runs | Kaggle free T4 (Colab free tier refused a backend from our location) |
+
+**Everything reported so far is a bounded pilot, not the proposed ~5M-token study.** The first
+50-update pilot produced representations worse than a random-init encoder on AG News; that
+negative result is recorded rather than hidden, and it is why the next step is budget.
+
+Start with [GPU pilot](docs/PERSON1_GPU_PILOT.md), [probe](docs/PERSON1_PROBE.md),
+[Person 2 review](docs/PERSON2_REVIEW.md) and the [progress log](docs/PROGRESS.md).
 
 ## Start here
 
@@ -24,13 +43,24 @@ Person 1's random small encoder, C/A/B objectives, fp32 runner, resumable checkp
 | `person1` | Daksh | Encoder, MLM/latent objectives, training, EMA, checkpoints, model tests |
 | `person2` | Teammate (name unconfirmed) | Data, masking, statistics, evaluation, plots, Colab launcher, data/evaluation tests |
 
-One shared encoder and runner; do not implement separate incompatible models on each branch. Both members interpret results and prepare the presentation. Do not merge another person's unfinished work without agreement.
+`main` is the canonical integrated branch: both owners' work lives there together, and every
+result in `results/` was produced from a commit on it. `person1` and `person2` remain the owners'
+working branches. One shared encoder and runner; never implement separate incompatible models.
 
-## Immediate milestone
+## How to reproduce
 
-Run a single real-data MLM optimization step end to end. Before integration, Person 1 can test with synthetic batches while Person 2 tests data and metrics with fixtures. Synthetic tests are not research results.
+```bash
+git clone https://github.com/dakshadev/7th-sem.git
+cd 7th-sem
+python -m pytest -q                     # 55 passed, 2 skipped
+python scripts/build_batches.py --help  # dataset → batch artifact + manifest
+python scripts/run_pilot.py --help      # one bounded pilot with the real trainer
+python scripts/run_probe.py --help      # frozen AG News linear probe
+python scripts/ambiguity_analysis.py --help   # Objective 1 ambiguity analysis
+```
 
-**Review minimum:** working MLM and one latent recipe, saved checkpoints, real loss and representation diagnostic plots. **Preferred:** matched-budget A/B/C pilots and an initial AG News frozen probe. No guarantee these fit the available time/GPU quota. Defer full ablations, repeated seeds, SIGReg and SST-2 until the core works.
+The GPU path is documented end to end in [docs/COLAB_RUNBOOK.md](docs/COLAB_RUNBOOK.md): a free
+Kaggle T4 is sufficient; do not install `torch` from `requirements.txt` on a GPU runtime.
 
 ## Local checkout
 
@@ -42,9 +72,9 @@ cd 7th-sem
 git switch person1   # teammate uses person2
 ```
 
-The repository is private; each collaborator needs access. Never put tokens in notebooks or commits.
+The repository is public, so Colab and Kaggle can clone it without a token. Never put tokens in notebooks or commits.
 
-## Proposed layout (not implemented yet)
+## Layout
 
 ```text
 configs/                 # Small explicit experiment configurations
