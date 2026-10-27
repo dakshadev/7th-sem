@@ -2,7 +2,21 @@
 
 ## Read before acting
 
-Read README.md, docs/PROJECT_CONTEXT.md, docs/INTERFACES.md, docs/EXPERIMENT_PROTOCOL.md and docs/PROGRESS.md, then the handoff matching the current branch. Inspect git status, branch, tracked files and recent commits first. These documents are a handoff, not proof that implementation exists.
+Read README.md, docs/PROJECT_CONTEXT.md, docs/INTERFACES.md, docs/EXPERIMENT_PROTOCOL.md,
+docs/DATA_INTEGRITY.md and docs/PROGRESS.md, then the handoff matching the current branch.
+Inspect git status, branch, tracked files and recent commits first.
+
+`main` is the implemented tree, not a plan: the encoder, objectives, data pipeline, training
+loop, evaluation and tests exist, the suite is `55 passed, 2 skipped`, and results/ holds
+measured runs. The docs describe that work. Still, run the suite before assuming a subsystem
+works (`python -m pytest -q`) and check docs/PROGRESS.md for the latest entry, which is the
+only place that records what was actually executed and when.
+
+Two documents anchor that evidence: docs/PERSON1_LONG_PILOT.md (measured pilots, ablations,
+probe, ambiguity analysis) and docs/DATA_INTEGRITY.md (what an independent audit verified, and
+the six ways these artefacts can be misread — seed provenance, two training clocks, a
+stream-size field that looks like a token budget, an unpinned random baseline, sub-0.002 probe
+noise, and WikiText-2 being a prefix of WikiText-103).
 
 ## Role routing
 
