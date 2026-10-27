@@ -104,7 +104,10 @@ class OptimizerConfig:
 @dataclass(frozen=True)
 class TeacherConfig:
     ema_decay: float = 0.996
-    target_norm: Literal["none", "layernorm"] = "layernorm"
+    # Target construction lives in ObjectiveConfig.target so component-wise ablations (D-G) can
+    # vary the target without also changing masking, predictor or loss. This flag is now only a
+    # cross-check: 'layernorm' is legal solely with the top2_normalized target.
+    target_norm: Literal["none", "layernorm"] = "none"
 
     def __post_init__(self) -> None:
         if self.target_norm not in {"none", "layernorm"}:
@@ -131,18 +134,77 @@ class MaskConfig:
 
 @dataclass(frozen=True)
 class ObjectiveConfig:
-    variant: Literal["mlm", "latent_a", "latent_b"] = "mlm"
+    """Objective defined by its individual components.
+
+    Recipes A/B are presets of these fields, and the D-G ablations change exactly one field
+    relative to A while masking stays in MaskConfig. `label` is the reported run name.
+    """
+
+    kind: Literal["mlm", "latent"] = "mlm"
+    target: Literal["final", "top2_normalized"] = "final"
+    predictor: Literal["attention", "linear"] = "attention"
+    loss: Literal["mse", "smooth_l1"] = "mse"
+    label: str = "C"
     smooth_l1_beta: float = 1.0
     predictor_dropout: float = 0.1
+    # Deprecated: a legacy recipe name that expands into the component fields below. Kept so
+    # existing configs and callers keep working; new configs declare the components directly.
+    variant: str = ""
 
     def __post_init__(self) -> None:
-        if self.variant not in {"mlm", "latent_a", "latent_b"}:
-            raise ValueError("objective variant must be 'mlm', 'latent_a', or 'latent_b'")
+        if self.variant:
+            if self.variant not in LEGACY_VARIANTS:
+                raise ValueError(
+                    f"legacy objective variant {self.variant!r} is not one of "
+                    f"{sorted(LEGACY_VARIANTS)}; declare kind/target/predictor/loss instead"
+                )
+            for key, value in LEGACY_VARIANTS[self.variant].items():
+                object.__setattr__(self, key, value)
+            object.__setattr__(self, "variant", "")
+        if self.kind not in {"mlm", "latent"}:
+            raise ValueError("objective kind must be 'mlm' or 'latent'")
+        if self.target not in {"final", "top2_normalized"}:
+            raise ValueError("objective target must be 'final' or 'top2_normalized'")
+        if self.predictor not in {"attention", "linear"}:
+            raise ValueError("objective predictor must be 'attention' or 'linear'")
+        if self.loss not in {"mse", "smooth_l1"}:
+            raise ValueError("objective loss must be 'mse' or 'smooth_l1'")
+        if not isinstance(self.label, str) or not self.label.strip():
+            raise ValueError("objective label must be a nonempty string")
         if (
             _finite_number(self.smooth_l1_beta, "smooth_l1_beta") <= 0
             or not 0 <= _finite_number(self.predictor_dropout, "predictor_dropout") < 1
         ):
             raise ValueError("invalid objective settings")
+
+
+
+LEGACY_VARIANTS: dict[str, dict[str, Any]] = {
+    "mlm": {"kind": "mlm", "label": "C"},
+    "latent_a": {"kind": "latent", "target": "final", "predictor": "attention", "loss": "mse", "label": "A"},
+    "latent_b": {
+        "kind": "latent",
+        "target": "top2_normalized",
+        "predictor": "linear",
+        "loss": "smooth_l1",
+        "label": "B",
+    },
+}
+
+
+def _objective_from_dict(value: dict[str, Any]) -> "ObjectiveConfig":
+    """Accept either explicit components or the deprecated single `variant` key."""
+    payload = dict(value)
+    legacy = payload.pop("variant", None)
+    if legacy is not None:
+        if legacy not in LEGACY_VARIANTS:
+            raise ValueError(
+                f"legacy variant {legacy!r} is not one of {sorted(LEGACY_VARIANTS)}; "
+                "declare kind/target/predictor/loss instead"
+            )
+        merged = {**LEGACY_VARIANTS[legacy], **payload}
+        return ObjectiveConfig(**merged)
+    return ObjectiveConfig(**payload)
 
 
 @dataclass(frozen=True)
@@ -181,20 +243,29 @@ class ExperimentConfig:
     def __post_init__(self) -> None:
         if self.schema_version != 1:
             raise ValueError("unsupported config schema")
-        if self.objective.variant == "latent_a":
-            if self.mask.policy != "span":
-                raise ValueError("latent_a requires span mask metadata")
-            if self.teacher.target_norm != "none":
-                raise ValueError("latent_a final-layer target must not add normalization")
-        if self.objective.variant == "mlm" and self.mask.policy != "independent":
-            raise ValueError("mlm requires independent mask metadata")
-        if self.objective.variant == "latent_b":
-            if self.mask.policy != "independent":
-                raise ValueError("latent_b requires independent mask metadata")
-            if self.teacher.target_norm != "layernorm":
-                raise ValueError("latent_b requires layernorm top2 targets")
+        # Masking is a free axis so component-wise ablations can hold it fixed or vary it
+        # independently of the objective. Structural constraints only:
+        if self.objective.kind == "latent" and self.objective.target == "top2_normalized":
             if self.model.layers < 2:
-                raise ValueError("latent_b requires at least two encoder layers")
+                raise ValueError("top2_normalized target requires at least two encoder layers")
+        if self.objective.kind == "mlm" and (
+            self.objective.target != "final"
+            or self.objective.predictor != "attention"
+            or self.objective.loss != "mse"
+        ):
+            raise ValueError(
+                "mlm has no teacher target, predictor or latent loss; "
+                "use kind='latent' to select target/predictor/loss"
+            )
+        if (
+            self.objective.kind == "latent"
+            and self.teacher.target_norm == "layernorm"
+            and self.objective.target != "top2_normalized"
+        ):
+            raise ValueError(
+                "teacher.target_norm='layernorm' only applies to the top2_normalized target; "
+                "set target_norm='none' for the final-layer target"
+            )
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -209,7 +280,17 @@ class ExperimentConfig:
         optimizer = _allowed_mapping(value.get("optimizer", {}), OptimizerConfig, "optimizer")
         teacher = _allowed_mapping(value.get("teacher", {}), TeacherConfig, "teacher")
         mask = _allowed_mapping(value.get("mask", {}), MaskConfig, "mask")
-        objective = _allowed_mapping(value.get("objective", {}), ObjectiveConfig, "objective")
+        objective = dict(value.get("objective", {}))
+        if not isinstance(objective, dict):
+            raise ValueError("objective must be an object")
+        legacy = objective.pop("variant", None)
+        if legacy:
+            if legacy not in LEGACY_VARIANTS:
+                raise ValueError(
+                    f"legacy objective variant {legacy!r} is not one of {sorted(LEGACY_VARIANTS)}; "
+                    "declare kind/target/predictor/loss instead"
+                )
+            objective = {**LEGACY_VARIANTS[legacy], **objective}
         run = _allowed_mapping(value.get("run", {}), RunConfig, "run")
         if "special_token_ids" in model:
             model["special_token_ids"] = tuple(model["special_token_ids"])

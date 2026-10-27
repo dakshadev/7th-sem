@@ -1,5 +1,21 @@
 {
-  "objective": {"variant": "mlm"},
-  "mask": {"policy": "independent", "ratio": 0.15, "span_length": 3},
-  "run": {"seed": 17, "token_budget": 5000000, "device": "cpu"}
+  "objective": {
+    "kind": "mlm",
+    "label": "C"
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "independent",
+    "ratio": 0.15,
+    "span_length": 3
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Control C: masked language modelling, vocabulary cross-entropy."
 }

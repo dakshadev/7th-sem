@@ -1,0 +1,24 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "linear",
+    "loss": "mse",
+    "label": "F"
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Ablation F: A with only B's predictor (linear). Everything else as A."
+}

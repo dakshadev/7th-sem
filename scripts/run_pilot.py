@@ -29,6 +29,20 @@ CONFIG_BY_VARIANT = {
     "mlm": "configs/mlm_c.json",
     "latent_a": "configs/latent_a.json",
     "latent_b": "configs/latent_b.json",
+    "ablation_d": "configs/ablation_d.json",
+    "ablation_e": "configs/ablation_e.json",
+    "ablation_f": "configs/ablation_f.json",
+    "ablation_g": "configs/ablation_g.json",
+}
+# CLI name -> the run label recorded in the config. Labels are what appear in results.
+VARIANT_LABEL = {
+    "mlm": "C",
+    "latent_a": "A",
+    "latent_b": "B",
+    "ablation_d": "D",
+    "ablation_e": "E",
+    "ablation_f": "F",
+    "ablation_g": "G",
 }
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
 
@@ -46,11 +60,16 @@ def resolve_device(requested: str) -> str:
 def resolve_config(args: argparse.Namespace) -> tuple[ExperimentConfig, Path]:
     config_path = Path(args.config or CONFIG_BY_VARIANT[args.variant])
     config = load_config(config_path)
-    if config.objective.variant != args.variant:
+    expected = VARIANT_LABEL[args.variant]
+    if config.objective.label != expected:
         raise ValueError(
-            f"config {config_path} declares {config.objective.variant!r}, not {args.variant!r}"
+            f"config {config_path} declares label {config.objective.label!r}, not {expected!r} "
+            f"for variant {args.variant!r}"
         )
     run = replace(config.run, device=resolve_device(args.device))
+    if args.seed is not None:
+        # A "run seed" must also seed initialisation, dropout and batch order, not only masking.
+        run = replace(run, seed=args.seed)
     if args.max_tokens is not None:
         run = replace(run, token_budget=args.max_tokens)
     return replace(config, run=run), config_path

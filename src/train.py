@@ -120,7 +120,7 @@ class Trainer:
         self.mlm_head: MLMHead | None = None
         self.predictor: nn.Module | None = None
         self.teacher: SmallEncoder | None = None
-        if config.objective.variant == "mlm":
+        if config.objective.kind == "mlm":
             self.mlm_head = MLMHead(config.model.width, config.model.vocab_size).to(self.device)
             modules: list[nn.Module] = [self.student, self.mlm_head]
         else:
@@ -130,7 +130,7 @@ class Trainer:
             self.teacher.eval()
             self.predictor = (
                 AttentionPredictor(config.model, config.objective.predictor_dropout)
-                if config.objective.variant == "latent_a"
+                if config.objective.predictor == "attention"
                 else LinearPredictor(config.model.width)
             ).to(self.device)
             modules = [self.student, self.predictor]
@@ -195,11 +195,11 @@ class Trainer:
             teacher_output = self.teacher(
                 batch["input_ids"],
                 batch["attention_mask"],
-                return_hidden_states=self.config.objective.variant == "latent_b",
+                return_hidden_states=self.config.objective.target == "top2_normalized",
             )
             targets = (
                 final_target(teacher_output.last_hidden_state, batch["prediction_mask"])
-                if self.config.objective.variant == "latent_a"
+                if self.config.objective.target == "final"
                 else normalized_top2_target(teacher_output.hidden_states, batch["prediction_mask"])
             )
         predictions = self.predictor(student_output.last_hidden_state, batch["attention_mask"])
@@ -207,7 +207,7 @@ class Trainer:
             predictions,
             targets,
             batch["prediction_mask"],
-            "mse" if self.config.objective.variant == "latent_a" else "smooth_l1",
+            self.config.objective.loss,
             self.config.objective.smooth_l1_beta,
         )
 
