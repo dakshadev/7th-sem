@@ -489,6 +489,7 @@ def test_bridge_fails_clearly_without_person2_evaluate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     install_person2_stubs(monkeypatch)
-    monkeypatch.delitem(sys.modules, "src.evaluate")
+    monkeypatch.setitem(sys.modules, "src.evaluate", None)
     with pytest.raises(RuntimeError, match="src/evaluate.py"):
         geometry_from_embeddings(torch.randn(4, 4))
+

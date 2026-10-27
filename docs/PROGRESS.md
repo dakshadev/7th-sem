@@ -89,3 +89,31 @@ Prepare a tiny real tokenized batch with masks, document data/tokenizer selectio
 - Actual test/integration outcome: 31 passed, 1 skipped. Integration tests run offline without network.
 - Interface changes agreed with other owner: Person 2's `src/evaluate.py` has now implemented support for the `"student"` checkpoint key and extracts `model_config`. Person 2's `src/data.py` provides production `get_dataset_loaders` and tracked `results/tiny_batch.pt`.
 
+## Person 2 3-variant integration and durable restart recovery — 27 October 2026
+
+- Date / author / branch / commit: 27 October 2026 / Teammate (Person 2) / `person2` / commit `673c14e` (merged `origin/person1`).
+- Implemented files: `notebooks/run_colab.ipynb`, `tests/test_integration.py`, `docs/PERSON2.md`, `docs/PROGRESS.md`.
+- Exact command and environment:
+  - CPython 3.12.4, PyTorch `2.13.0+cpu`, pytest `9.1.1`, Transformers `5.21.0`, Datasets `5.1.0`.
+  - Commands executed:
+    `python -m pytest tests/ -v` (Outcome: 52 passed, 1 skipped in 23.57s)
+- Actual test/integration outcome:
+  - Complete 53-test test suite passing (52 passed on CPU, 1 CUDA resume test cleanly skipped on CPU).
+  - Merged Person 1 model, objectives, configs (`configs/mlm_c.json`, `configs/latent_a.json`, `configs/latent_b.json`), and runner into `person2`.
+  - Upgraded `notebooks/run_colab.ipynb` to:
+    1. Pin checkout to `673c14e` (integration commit, 8120215 or later).
+    2. Replace synthetic scratch encoder and custom loops with `from src.model import SmallEncoder` and `from src.train import Trainer, run_batches`.
+    3. Include complete execution cells for all three variants (MLM C, Latent A, Latent B) with real dataset loaders.
+    4. Provide side-by-side comparative loss trajectory plots saving to persistent storage (`pilot_loss_trajectories.png`).
+    5. Test durable restart recovery across runtime reset by wiping memory (`del`, `gc.collect`, `cuda.empty_cache`) and reloading frozen student weights via `load_student_checkpoint` from durable storage handles.
+    6. Run post-recovery representation geometry diagnostics (RankMe, covariance rank, dimension variance, cosine metrics) and AG News frozen linear probe transfer.
+    7. Save consolidated JSON experiment summary report to durable storage (`three_variant_benchmark_summary.json`).
+- Durable logs/checkpoint/plot locations:
+  - `notebooks/run_colab.ipynb`
+  - `tests/test_integration.py`
+  - Configurable `DURABLE_ROOT` pointing to `/content/drive/MyDrive/7thSem_artifacts` (Colab) or `/kaggle/working/artifacts` (Kaggle).
+- Known failures or limitations:
+  - GPU pretraining waiting for user to launch the Colab/Kaggle notebook on a cloud accelerator.
+- Next action / owner:
+  - Ready for final review, cloud GPU run by user, or PR merge into `main`.
+
