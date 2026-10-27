@@ -167,7 +167,7 @@ def build() -> Path:
         [
             "Built: shared 4-layer encoder, MLM control, two masked-latent recipes, EMA teacher, resumable checkpoints",
             "Built: data pipeline, masking policies, representation geometry, frozen linear probe, ambiguity analysis",
-            "Validated: 33 automated tests, lint clean, checkpoint resume with exact state parity",
+            "Validated: 55 automated tests, lint clean, checkpoint resume with exact state parity",
             "Run: pilots on a free Kaggle T4 (no local GPU, no paid compute)",
             "Not yet: the full training budget. Every result so far is a bounded pilot, and we say so",
         ],
