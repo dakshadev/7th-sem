@@ -247,3 +247,29 @@ def test_get_dataset_loaders_offline(tokenizer, monkeypatch):
     val_batch = next(iter(val_loader))
     assert val_batch["input_ids"].shape == (1, 64)
 
+
+
+def test_unk_and_mask_positions_are_never_selected() -> None:
+    """Fast tokenizers leave [UNK]/[MASK] out of special_tokens_mask, so masking must
+    exclude the tokenizer's full special-id list. Predicting [UNK] is meaningless and
+    breaks the docs/INTERFACES.md batch contract."""
+    from src.data import get_bert_tokenizer, process_single_text
+
+    tokenizer = get_bert_tokenizer()
+    reserved = {int(i) for i in tokenizer.all_special_ids}
+    # Characters outside the uncased vocabulary force [UNK] tokens into the sequence.
+    texts = [
+        "the quick brown fox \u0d2a\u0d4d\u0d30\u0d1c\u0d15\u0d4d\u0d1f\u0d3f jumps over 42 lazy dogs",
+        "researchers recorded \u0416\u0438\u0437\u043d\u044c scores and \u4e2d\u6587 labels in the corpus",
+        "a" * 20 + " \u0411\u0411\u0411 " + "b" * 20,
+    ]
+    for text in texts:
+        for mode in ("independent", "span"):
+            out = process_single_text(
+                text, tokenizer, max_length=64, mask_ratio=0.5, mask_mode=mode, seed=7
+            )
+            ids, selected = out["input_ids"], out["prediction_mask"]
+            assert not any(
+                bool(selected[i]) and int(ids[i]) in reserved for i in range(len(ids))
+            ), f"{mode} selected a reserved token position"
+            assert bool(selected.any()), f"{mode} selected nothing in a long enough text"
