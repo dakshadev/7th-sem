@@ -1,103 +1,212 @@
-# Lightweight Self-Supervised Text Representation Learning
+# A Lightweight Self-Supervised Framework for Text Representation Learning Using Masked Latent Prediction
 
-**Project:** A Lightweight Self-Supervised Framework for Text Representation Learning Using Masked Latent Prediction.
+An undergraduate research project (7th semester, MSRUAS) that asks a narrow, testable question:
+**when the training signal is a masked latent prediction rather than masked-token prediction, does
+a small text encoder learn better or worse representations — and what, specifically, about the
+recipe causes that?**
 
-This undergraduate research project investigates how target construction, masking, predictor design and regression loss affect collapse and transfer in a small text encoder. It compares masked latent prediction against a masked-language-modeling (MLM) control.
+One shared 4-layer Transformer, one data pipeline, one evaluation harness. The only thing that
+changes between conditions is the objective. No pretrained weights anywhere in the project
+encoder; `bert-base-uncased` is used only as a tokenizer (and, in one analysis, as an external
+ambiguity estimator).
 
-## Current status — 27 October 2026
+## Research question
 
-The experimental system is built and has been run on a free GPU. What is missing is training
-budget, not infrastructure.
+Masked-token prediction spends its capacity on lexical identity. A masked-latent objective instead
+predicts the encoder's *own* hidden states, teacher-side, which promises semantic rather than
+lexical targets — but only if the target does not collapse to a constant. This project measures
+that trade-off directly, at a scale it can afford, and reports the failure modes (including the
+negative ones) rather than only the best cell of the table.
 
-| Area | State |
+## Conditions
+
+| ID | Signal | Target | Predictor | Loss | Masking |
+|---|---|---|---|---|---|
+| **C** | token identity (MLM control) | input token | linear head | cross-entropy | independent |
+| **A** | masked latent | final teacher layer | attention | MSE | span |
+| **B** | masked latent | mean of top-2 normalized teacher layers | linear | Smooth L1 | independent |
+| **D–G** | one-at-a-time variants of A | top-2 target (D), span→independent (E), linear predictor (F), Smooth L1 (G) | | | |
+
+The teacher is a frozen EMA copy of the encoder (decay 0.996) whose targets are detached; EMA is
+applied after the optimizer step, so the teacher never receives gradients.
+
+## What is built
+
+| Component | State |
 |---|---|
-| Encoder, MLM control, latent recipes A/B, EMA teacher | Implemented and tested |
-| Component ablations D–G (one change at a time) | Configs + runner ready |
-| Data pipeline, masking policies, corpus statistics | Implemented (Person 2) |
-| Geometry metrics, frozen linear probe, ambiguity analysis | Implemented and run |
-| Checkpoint resume, standalone student export | Tested, including exact state parity |
-| Automated tests | 55 passed, 2 skipped (CUDA-only + integrated-tree skip) |
+| Shared encoder (4 layers, width 256, 4 heads, seq 128), padding-aware attention | Implemented, tested |
+| MLM control, latent recipes A/B, EMA teacher, detached targets | Implemented, tested |
+| Component ablations D–G as explicit configs (one change from A each) | Implemented, run |
+| Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
+| Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
+| Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
+| Automated tests | **55 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
-| GPU runs | Kaggle free T4 (Colab free tier refused a backend from our location) |
 
-**Everything reported so far is a bounded pilot, not the proposed ~5M-token study.** The first
-50-update pilot produced representations worse than a random-init encoder on AG News; that
-negative result is recorded rather than hidden, and it is why the next step is budget.
+## Results so far (all bounded pilots)
 
-Start with [GPU pilot](docs/PERSON1_GPU_PILOT.md), [probe](docs/PERSON1_PROBE.md),
-[Person 2 review](docs/PERSON2_REVIEW.md) and the [progress log](docs/PROGRESS.md).
+Everything below is measured, stored as JSON in `results/person1/`, and regenerated into the
+mid-project deck by a script — no number in the slides is hand-typed.
 
-## Start here
+### 1. Scaled pilot — 700,482 tokens per run, two seeds (free Kaggle T4)
 
-1. Read [AGENTS.md](AGENTS.md) — instructions for any AI assistant.
-2. Read [project context](docs/PROJECT_CONTEXT.md) — proposal, scope and deadlines.
-3. Agree on [shared interfaces](docs/INTERFACES.md) before implementation.
-4. Follow your handoff: [Person 1](docs/PERSON1.md) / [Person 2](docs/PERSON2.md).
-5. Use [experiment protocol](docs/EXPERIMENT_PROTOCOL.md) and update [progress](docs/PROGRESS.md) after verified work.
+12,000 WikiText-2 records, sequence length 128, batch 8, mask ratio 0.15, stop reason `budget`.
+Each run is 1,230 updates and 102,721 masked targets, i.e. **14% of the proposed 5M-token budget**.
 
-## Ownership
-
-| Branch | Owner | Responsibilities |
+| Condition | Seed 17 | Seed 43 |
 |---|---|---|
-| `main` | Both, integration only | Reviewed shared foundation and integrated work |
-| `person1` | Daksh | Encoder, MLM/latent objectives, training, EMA, checkpoints, model tests |
-| `person2` | Teammate (name unconfirmed) | Data, masking, statistics, evaluation, plots, Colab launcher, data/evaluation tests |
+| C — MLM | 10.526 → 7.784 | 10.444 → 7.945 |
+| A — latent | 2.014 → 0.505 | 2.018 → 0.519 |
+| B — latent | 0.563 → 0.150 | 0.576 → 0.154 |
 
-`main` is the canonical integrated branch: both owners' work lives there together, and every
-result in `results/` was produced from a commit on it. `person1` and `person2` remain the owners'
-working branches. One shared encoder and runner; never implement separate incompatible models.
+Seed-to-seed spread is small (A: 0.505 vs 0.519). **Losses are objective-specific and are not
+comparable across rows** — a lower number does not mean a better model.
+
+### 2. Are the representations collapsed or usable?
+
+Effective rank of the frozen representation on held-out WikiText-2 (300 records):
+
+| Student | Rank (singular) | Rank (covariance) | Status |
+|---|---|---|---|
+| C — MLM | 10.23 / 16.95 | 1.09 / 1.47 | healthy |
+| A — latent | 76.43 / 80.82 | 3.62 / 5.15 | healthy |
+| B — latent | 67.58 / 72.63 | 2.87 / 3.57 | healthy |
+
+Nothing collapsed. The MLM control learns a markedly **lower-rank** space than either latent
+recipe at this budget. Whether that is caused by the objective or by the MLM head consuming a
+larger share of the update budget is not established here.
+
+### 3. The uncomfortable result — frozen linear probe on AG News
+
+4,000 probe-train / 1,000 held-out, identical probe for every student:
+
+| Student | Accuracy | Macro-F1 |
+|---|---|---|
+| C — MLM (17 / 43) | 0.575 / 0.577 | 0.570 / 0.568 |
+| A — latent (17 / 43) | 0.589 / 0.588 | 0.586 / 0.582 |
+| B — latent (17 / 43) | 0.593 / 0.585 | 0.590 / 0.579 |
+| **Random-init reference, same architecture** | **0.632** | **0.628** |
+| Majority-class baseline | 0.274 | — |
+
+**Every trained student scores below a randomly initialised encoder.** At 700k tokens — three
+orders of magnitude below BERT-scale pretraining — the encoders have not yet produced features
+that beat an untrained one on this probe. The result is reported as found, because it is the
+project's most useful finding: at this scale the binding constraint is budget, not recipe. One
+contributing factor is the train/evaluation mismatch inherent in the contract (train on masked
+inputs, evaluate on clean ones), which a long run outgrows but a 0.7M-token run does not.
+
+### 4. Objective 1 — how ambiguous is masked text, really?
+
+400 records, 26,840 positions, **one position masked at a time** with the surrounding context
+intact (masking every position at once destroys the context and yields uniform entropy — an
+earlier bug, now fixed). `google-bert/bert-base-uncased` serves only as an ambiguity estimator;
+its weights never enter the project encoder.
+
+| Measurement | Value |
+|---|---|
+| Mean predictive entropy | 1.277 nats |
+| Median | 0.602 nats |
+| 90th percentile | 3.740 nats |
+| Positions above log 5 (≥5 plausible tokens) | 30.2% |
+| Positions below 1 nat (near-deterministic) | 60.1% |
+| Rare tokens (1–2 occurrences) | 1.523 nats |
+| Frequent tokens (> 20) | 1.107 nats |
+
+Rarer tokens are more ambiguous, as expected, and ~30% of positions genuinely have several
+plausible fillers — the premise that masked text is not a deterministic target holds.
+
+**But span masking is not more ambiguous than independent masking at this scale:** 1.633 vs 1.612
+nats, with 191 of 400 records span-more-ambiguous. An earlier 12-record smoke run suggested a
+large gap; with 400 records it disappears. The 400-record result is the one we report.
+
+## Limitations (stated up front)
+
+- 700k tokens is 14% of the proposed budget and far below the regime the literature describes.
+- Two seeds bound run-to-run stability; they are not confidence intervals.
+- Ablations D–G are single-seed, so their differences cannot be separated from seed noise.
+- A random 4-layer encoder is a strong baseline on an easy 4-class task.
+- The ambiguity estimate comes from a different (pretrained) model than the project encoder.
+
+## Repository layout
+
+```text
+configs/                  # one JSON per condition: mlm_c, latent_a, latent_b, ablation_d..g
+src/
+  model.py                # shared encoder, intermediate hidden states
+  objectives.py           # MLM, latent A, latent B, ablation wiring
+  train.py                # Trainer, EMA teacher, checkpoints, provenance, run_batches
+  config.py               # dataclass configs + runtime validation
+  data.py                 # Person 2: tokenization, masking policies, loaders
+  evaluate.py             # Person 2: geometry metrics, frozen linear probe
+  evaluate_bridge.py      # Person 1 ↔ Person 2 evaluation glue
+scripts/
+  build_batches.py        # dataset → batch artifact + manifest
+  run_pilot.py            # one bounded run with the real trainer
+  run_probe.py            # frozen AG News linear probe
+  ambiguity_analysis.py   # Objective 1, single-position masking
+  build_midreview_deck.py # regenerates docs/mid-project-review.pptx from results/
+tests/                    # unit + integration, split by subsystem
+results/person1/          # measured evidence, JSON
+docs/                     # protocol, interfaces, reviews, runbook, deck
+```
 
 ## How to reproduce
 
 ```bash
-git clone https://github.com/dakshadev/7th-sem.git
-cd 7th-sem
-python -m pytest -q                     # 55 passed, 2 skipped
-python scripts/build_batches.py --help  # dataset → batch artifact + manifest
-python scripts/run_pilot.py --help      # one bounded pilot with the real trainer
-python scripts/run_probe.py --help      # frozen AG News linear probe
-python scripts/ambiguity_analysis.py --help   # Objective 1 ambiguity analysis
+git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
+python -m pytest -q                       # 55 passed, 2 skipped
+python scripts/build_batches.py --help    # dataset → batch artifact + manifest
+python scripts/run_pilot.py --help        # one bounded pilot
+python scripts/run_probe.py --help        # frozen AG News probe
+python scripts/ambiguity_analysis.py --help
+python scripts/build_midreview_deck.py    # rebuild the deck from results/
 ```
 
-The GPU path is documented end to end in [docs/COLAB_RUNBOOK.md](docs/COLAB_RUNBOOK.md): a free
-Kaggle T4 is sufficient; do not install `torch` from `requirements.txt` on a GPU runtime.
+Compute: **free GPU only** — a Kaggle T4 is sufficient (30 GPU-hours/week). Colab's free tier
+refused to allocate a backend from our location, which is why the runbook targets Kaggle. On a GPU
+runtime do **not** `pip install -r requirements.txt`: it pins a CPU wheel over the CUDA build.
 
-## Local checkout
+Full run instructions: [docs/COLAB_RUNBOOK.md](docs/COLAB_RUNBOOK.md). Every run records its
+commit, device, token budget, wall-clock time and artifact hashes; runs that were interrupted are
+labelled as such rather than reported as finished.
 
-Daksh's checkout: `C:\Users\daksh\MyLife\Work\7th-sem`.
+## Ownership and branches
 
-```bash
-git clone https://github.com/dakshadev/7th-sem.git
-cd 7th-sem
-git switch person1   # teammate uses person2
-```
+| Branch | Owner | Responsibility |
+|---|---|---|
+| `main` | both, integration only | canonical integrated tree — every result in `results/` came from a commit on it |
+| `person1` | Daksh | encoder, objectives, training, configs, model tests |
+| `person2` | teammate | data, masking, evaluation, plots, data/evaluation tests |
 
-The repository is public, so Colab and Kaggle can clone it without a token. Never put tokens in notebooks or commits.
+One shared encoder and one runner; never two incompatible models. Changes to shared code go to
+`main` and are reported to the other owner, who replicates them on their branch.
 
-## Layout
+## Documentation map
 
-```text
-configs/                 # Small explicit experiment configurations
-src/
-  data.py                # Person 2: tokenization, splits, masking, loaders
-  model.py               # Person 1: shared encoder
-  objectives.py          # Person 1: MLM and masked latent objectives
-  train.py               # Person 1: runner, EMA, checkpoints, logs
-  evaluate.py            # Person 2: representation metrics and frozen probes
-notebooks/run_colab.ipynb # Person 2, jointly verified
-tests/                   # Split ownership by subsystem
-```
+- [AGENTS.md](AGENTS.md) — instructions for any AI assistant working in this repo.
+- [docs/PROJECT_CONTEXT.md](docs/PROJECT_CONTEXT.md) — proposal, scope, deadlines.
+- [docs/INTERFACES.md](docs/INTERFACES.md) — the batch/evaluation contract both owners code against.
+- [docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md) — what counts as a valid run.
+- [docs/PROGRESS.md](docs/PROGRESS.md) — chronological, measured evidence log.
+- [docs/PERSON1_LONG_PILOT.md](docs/PERSON1_LONG_PILOT.md) — scaled pilot, ablations, probe, ambiguity.
+- [docs/PERSON2_REVIEW.md](docs/PERSON2_REVIEW.md) — review of the data/evaluation modules.
+- [docs/COLAB_RUNBOOK.md](docs/COLAB_RUNBOOK.md) — GPU runbook (Kaggle).
+- [docs/mid-project-review.pptx](docs/mid-project-review.pptx) — mid-project deck, generated from results.
 
-The supported target interpreter is Python 3.12. The verified local CPU environment is PyTorch 2.9.1+cpu, pytest 9.1.1 and ruff 0.14.14; cloud GPU commands remain explicitly unexecuted.
+## Roadmap to the final submission
 
-## Collaboration
+1. **Budget sweep** — 0.7M → 5M tokens on WikiText-103, C/A/B × 2 seeds, probe and geometry at
+   each tier, to find whether (and where) transfer overtakes the random-initialised reference.
+2. **Ablations at full budget** with probes, two seeds — currently loss-only, single-seed.
+3. **SIGReg (recipe H)** — proposed but not yet implemented.
+4. **Second probe (SST-2)** so that one easy task cannot carry the conclusion.
+5. Report, final deck, viva preparation.
 
-Work on your assigned branch. Commit focused changes and push your branch, then open a pull request to `main`. The other member reviews tests and interfaces. Merge small compatible increments, then sync `main` into your branch:
+## Collaboration rules
 
-```bash
-git fetch origin
-git merge origin/main
-# resolve conflicts with the other owner; do not overwrite their work
-```
+Work on your own branch, commit focused changes, open a PR to `main`; the other owner reviews
+interfaces and tests. Do not force-push shared branches. Keep datasets, checkpoints, virtual
+environments and credentials out of Git. Record durable artifacts (and their hashes) outside
+ephemeral GPU runtimes — a Kaggle or Colab runtime is wiped when the session ends.
 
-Do not force-push shared branches. Keep datasets, checkpoints, virtual environments, credentials and large artifacts out of Git. Store durable artifacts outside ephemeral GPU runtimes and record their locations/checksums. Exact run evidence belongs in the progress log and experiment manifest.
+The repository is public, so Colab and Kaggle can clone it without a token. Never commit a token.
