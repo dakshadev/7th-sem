@@ -5,16 +5,16 @@ Unit tests for Person 2 evaluation pipeline (src/evaluate.py).
 Deterministic CPU unit tests with synthetic fixtures and no network calls.
 """
 
-import pytest
 import numpy as np
 import torch
 import torch.nn as nn
+
 from src.evaluate import (
-    masked_mean_pooling,
     compute_representation_geometry,
+    evaluate_frozen_linear_probe,
     freeze_model_for_evaluation,
     load_student_checkpoint,
-    evaluate_frozen_linear_probe,
+    masked_mean_pooling,
 )
 
 
@@ -170,7 +170,7 @@ def test_encoder_weights_frozen_during_evaluation():
 
     # Run forward pass
     dummy_input = torch.randint(0, 1000, (4, 16))
-    out = model(dummy_input)
+    model(dummy_input)
 
     # Weights must be exactly identical
     for k, v in model.state_dict().items():
@@ -204,7 +204,7 @@ def test_checkpoint_loading_roundtrip(tmp_path):
     loaded_2, cfg = load_student_checkpoint(str(checkpoint_path_2), new_model_2, return_config=True)
     assert not loaded_2.training
     assert cfg == config_payload
-    for p1, p2 in zip(model.parameters(), loaded_2.parameters()):
+    for p1, p2 in zip(model.parameters(), loaded_2.parameters(), strict=True):
         assert torch.equal(p1, p2)
         assert not p2.requires_grad
 

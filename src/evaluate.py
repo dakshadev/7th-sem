@@ -11,20 +11,21 @@ Adheres strictly to the evaluation contract defined in docs/INTERFACES.md:
 - Linear probe: scaler and classifier fitted strictly on train split.
 """
 
-from typing import List, Dict, Optional, Tuple, Union, Any, Set
+from typing import Any
+
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.preprocessing import StandardScaler
 
 
 def masked_mean_pooling(
     hidden_states: torch.Tensor,
     attention_mask: torch.Tensor,
     input_ids: torch.Tensor,
-    special_token_ids: Union[Set[int], List[int]],
+    special_token_ids: set[int] | list[int],
 ) -> torch.Tensor:
     """
     Computes attention-mask-aware mean pooling over valid sequence tokens,
@@ -64,10 +65,10 @@ def masked_mean_pooling(
 
 
 def compute_representation_geometry(
-    embeddings: Union[torch.Tensor, np.ndarray],
+    embeddings: torch.Tensor | np.ndarray,
     eps: float = 1e-12,
     dead_dim_threshold: float = 1e-6,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Computes rigorous representation geometry metrics for a sample matrix Z [N, D].
 
@@ -258,7 +259,7 @@ def freeze_model_for_evaluation(model: nn.Module) -> nn.Module:
     return model
 
 
-def read_checkpoint_payload(checkpoint: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+def read_checkpoint_payload(checkpoint: str | dict[str, Any]) -> dict[str, Any]:
     """
     Reads a checkpoint payload from a file path or dict.
     Extracts student weights, model configuration, and training step.
@@ -297,11 +298,11 @@ def read_checkpoint_payload(checkpoint: Union[str, Dict[str, Any]]) -> Dict[str,
 
 
 def load_student_checkpoint(
-    checkpoint: Union[str, Dict[str, Any]],
+    checkpoint: str | dict[str, Any],
     model: nn.Module,
     strict: bool = True,
     return_config: bool = False,
-) -> Union[nn.Module, Tuple[nn.Module, Optional[Dict[str, Any]]]]:
+) -> nn.Module | tuple[nn.Module, dict[str, Any] | None]:
     """
     Loads student weights from a checkpoint path or state dict.
     Accepts 'student', 'student_encoder', 'model', or 'encoder' keys,
@@ -338,7 +339,7 @@ def evaluate_frozen_linear_probe(
     seed: int = 42,
     max_iter: int = 1000,
     C: float = 1.0,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fits and evaluates a frozen linear probe (e.g. AG News).
     Invariant: Standard scaler and classifier are fit ONLY on train split.

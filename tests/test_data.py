@@ -7,17 +7,15 @@ Deterministic CPU unit tests with local fixtures and no network calls.
 
 import pytest
 import torch
-from transformers import BertTokenizerFast
+
 from src.data import (
-    get_bert_tokenizer,
-    process_single_text,
     TextMaskingDataset,
     collate_batch,
+    count_tokens_in_batch,
     create_dataloader,
     decode_masked_example,
-    count_tokens_in_batch,
-    mask_tokens_independent,
-    mask_tokens_span,
+    get_bert_tokenizer,
+    process_single_text,
 )
 
 
@@ -48,7 +46,6 @@ def test_tokenizer_metadata(tokenizer):
 
 def test_batch_contract_shapes_and_dtypes(tokenizer, sample_texts):
     """Verify shapes, dtypes, and ranges according to docs/INTERFACES.md."""
-    dataset = TextMaskingDataset(sample_texts, tokenizer, max_length=128, mask_ratio=0.15, seed=42)
     loader = create_dataloader(sample_texts, tokenizer, batch_size=4, shuffle=False, max_length=128, seed=42)
     batch = next(iter(loader))
 

@@ -9,12 +9,12 @@ Adheres strictly to the batch contract defined in docs/INTERFACES.md:
 - prediction_mask: [B, L], bool (True = eligible selected position contributing to loss)
 """
 
-from typing import List, Dict, Optional, Tuple, Union, Any
+from typing import Any
+
 import numpy as np
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Dataset
 from transformers import BertTokenizerFast, PreTrainedTokenizerFast
-
 
 DEFAULT_TOKENIZER_NAME = "bert-base-uncased"
 DEFAULT_MAX_LENGTH = 128
@@ -51,9 +51,9 @@ def mask_tokens_independent(
     eligible_mask: torch.Tensor,
     mask_ratio: float = DEFAULT_MASK_RATIO,
     mask_token_id: int = 103,
-    generator: Optional[torch.Generator] = None,
+    generator: torch.Generator | None = None,
     policy: str = "fixed_ratio",
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Masks eligible positions independently.
     
@@ -117,8 +117,8 @@ def mask_tokens_span(
     mean_span_length: int = DEFAULT_MEAN_SPAN_LENGTH,
     max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
     mask_token_id: int = 103,
-    generator: Optional[torch.Generator] = None,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+    generator: torch.Generator | None = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Masks eligible positions using short contiguous spans (SpanBERT / Recipe A).
     Spans are bounded by eligible tokens and never cross special tokens or padding.
@@ -210,11 +210,11 @@ def process_single_text(
     max_length: int = DEFAULT_MAX_LENGTH,
     mask_ratio: float = DEFAULT_MASK_RATIO,
     mask_mode: str = "independent",
-    generator: Optional[torch.Generator] = None,
-    seed: Optional[int] = None,
+    generator: torch.Generator | None = None,
+    seed: int | None = None,
     mean_span_length: int = DEFAULT_MEAN_SPAN_LENGTH,
     max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
-) -> Dict[str, torch.Tensor]:
+) -> dict[str, torch.Tensor]:
     """
     Tokenizes a single text string, creates eligible mask, applies masking strategy,
     and returns a dictionary meeting the batch contract (unbatched [L]).
@@ -296,12 +296,12 @@ class TextMaskingDataset(Dataset):
 
     def __init__(
         self,
-        texts: List[str],
+        texts: list[str],
         tokenizer: PreTrainedTokenizerFast,
         max_length: int = DEFAULT_MAX_LENGTH,
         mask_ratio: float = DEFAULT_MASK_RATIO,
         mask_mode: str = "independent",
-        seed: Optional[int] = None,
+        seed: int | None = None,
         mean_span_length: int = DEFAULT_MEAN_SPAN_LENGTH,
         max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
     ):
@@ -317,7 +317,7 @@ class TextMaskingDataset(Dataset):
     def __len__(self) -> int:
         return len(self.texts)
 
-    def __getitem__(self, idx: int) -> Dict[str, torch.Tensor]:
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
         text = self.texts[idx]
         generator = None
         if self.seed is not None:
@@ -337,7 +337,7 @@ class TextMaskingDataset(Dataset):
         )
 
 
-def collate_batch(batch: List[Dict[str, torch.Tensor]]) -> Dict[str, torch.Tensor]:
+def collate_batch(batch: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tensor]:
     """
     Collates a list of sample dictionaries into batched tensors [B, L].
     Validates batch invariants:
@@ -365,14 +365,14 @@ def collate_batch(batch: List[Dict[str, torch.Tensor]]) -> Dict[str, torch.Tenso
 
 
 def create_dataloader(
-    texts: List[str],
+    texts: list[str],
     tokenizer: PreTrainedTokenizerFast,
     batch_size: int = 16,
     shuffle: bool = True,
     max_length: int = DEFAULT_MAX_LENGTH,
     mask_ratio: float = DEFAULT_MASK_RATIO,
     mask_mode: str = "independent",
-    seed: Optional[int] = None,
+    seed: int | None = None,
     num_workers: int = 0,
 ) -> DataLoader:
     """
@@ -400,14 +400,13 @@ def decode_masked_example(
     masked_input_ids: torch.Tensor,
     prediction_mask: torch.Tensor,
     tokenizer: PreTrainedTokenizerFast,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Inspects a single tokenized and masked sequence.
     Returns original tokens, corrupted tokens, masked token positions,
     and masked target values.
     """
     orig_tokens = tokenizer.convert_ids_to_tokens(input_ids.tolist())
-    corrupted_tokens = tokenizer.convert_ids_to_tokens(masked_input_ids.tolist())
     masked_positions = torch.nonzero(prediction_mask, as_tuple=False).squeeze(-1).tolist()
     target_tokens = [orig_tokens[pos] for pos in masked_positions]
 
@@ -420,7 +419,7 @@ def decode_masked_example(
     }
 
 
-def count_tokens_in_batch(batch: Dict[str, torch.Tensor]) -> Dict[str, int]:
+def count_tokens_in_batch(batch: dict[str, torch.Tensor]) -> dict[str, int]:
     """
     Counts tokens according to project convention:
     - nonpadding_tokens: total valid student input tokens (sum of attention_mask)
@@ -436,9 +435,9 @@ def load_wikitext_split(
     dataset_config: str = WIKITEXT_PILOT_CONFIG,
     split: str = "train",
     min_length_chars: int = 30,
-    max_samples: Optional[int] = None,
+    max_samples: int | None = None,
     dataset_name: str = WIKITEXT_DATASET_NAME,
-) -> Tuple[List[str], Dict[str, Any]]:
+) -> tuple[list[str], dict[str, Any]]:
     """
     Loads text segments from a specified split of WikiText.
     Explicitly distinguishes between:
@@ -482,11 +481,11 @@ def get_dataset_loaders(
     mask_ratio: float = DEFAULT_MASK_RATIO,
     mask_mode: str = "independent",
     seed: int = 42,
-    max_train_samples: Optional[int] = None,
-    max_val_samples: Optional[int] = None,
+    max_train_samples: int | None = None,
+    max_val_samples: int | None = None,
     num_workers: int = 0,
-    tokenizer: Optional[PreTrainedTokenizerFast] = None,
-) -> Tuple[DataLoader, DataLoader, Dict[str, Any]]:
+    tokenizer: PreTrainedTokenizerFast | None = None,
+) -> tuple[DataLoader, DataLoader, dict[str, Any]]:
     """
     Real dataset-loader entry point for pretraining and validation.
     Loads real WikiText training and validation splits, constructs DataLoaders
@@ -581,7 +580,7 @@ if __name__ == "__main__":
     print(f"Loaded train loader with {len(train_loader.dataset)} samples, val loader with {len(val_loader.dataset)} samples.")
     batch = next(iter(train_loader))
     counts = count_tokens_in_batch(batch)
-    print(f"Batch Contract Verified:")
+    print("Batch Contract Verified:")
     for k, v in batch.items():
         print(f"  {k:18s} shape={list(v.shape)} dtype={v.dtype}")
     print(f"Tokens counted: {counts}")
