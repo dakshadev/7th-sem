@@ -74,4 +74,18 @@ Prepare a tiny real tokenized batch with masks, document data/tokenizer selectio
 - Next action / owner:
   - Person 1: use `results/tiny_batch.pt` or `src/data.py` `get_dataset_loaders` for encoder pretraining loop.
 
+## Person 1 implementation & CPU verification — 27 October 2026
+
+- Date / author / branch / commit: 27 October 2026 / Daksh (Person 1) / `person1` / commit `66e2570`.
+- Implemented files: `pyproject.toml`; `configs/` (`mlm_c.json`, `latent_a.json`, `latent_b.json`); `src/config.py`, `src/model.py`, `src/objectives.py`, `src/train.py`, `src/synthetic.py`; deterministic tests in `tests/`; `docs/PERSON1_IMPLEMENTATION.md` and `docs/DEVELOPMENT_EVIDENCE.md`.
+- Exact command and environment: CPython 3.12.10, PyTorch `2.9.1+cpu`, pytest `9.1.1`, ruff `0.14.14`.
+- Actual test/integration outcome: 25 passed, 1 skipped (CUDA test).
+- Experiment ID, config and tokens (if any): CPU synthetic correctness diagnostics only (two batches of two 128-token rows per C/A/B config).
+
+## Person 1 <-> Person 2 integration bridge and offline pilot — 27 October 2026
+
+- Date / author / branch / commit: 27 October 2026 / Daksh (Person 1) / `person1` / commit `a88cb65`.
+- Implemented files: `scripts/build_batches.py`, `scripts/run_pilot.py`, `scripts/__init__.py`, `src/evaluate_bridge.py`, `tests/test_integration.py`, `docs/COLAB_RUNBOOK.md`; updated `docs/PERSON1.md`, `docs/PERSON1_IMPLEMENTATION.md`, `docs/PROGRESS.md`.
+- Actual test/integration outcome: 31 passed, 1 skipped. Integration tests run offline without network.
+- Interface changes agreed with other owner: Person 2's `src/evaluate.py` has now implemented support for the `"student"` checkpoint key and extracts `model_config`. Person 2's `src/data.py` provides production `get_dataset_loaders` and tracked `results/tiny_batch.pt`.
 

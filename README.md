@@ -6,7 +6,7 @@ This undergraduate research project investigates how target construction, maskin
 
 ## Current status — 27 October 2026
 
-Documentation and collaboration bootstrap only. No model, dataset pipeline, training runs, checkpoints, benchmarks, dependency environment or executable notebook has been implemented or verified in this repository. Do not present this setup as experimental progress. Mid-project presentation: **29 October 2026**. Compute: free Colab/Kaggle GPU, availability unverified.
+Person 1's random small encoder, C/A/B objectives, fp32 runner, resumable checkpoints and export API are CPU-verified on `person1`: 25 deterministic CPU tests passed and one cloud-only CUDA resume test was skipped in the CPU environment. Two-update synthetic C/A/B diagnostics also completed on CPU; they are implementation checks, not research results. Person 2's data/evaluation pipeline, real-data integration and all cloud GPU runs remain pending. See [Person 1 implementation](docs/PERSON1_IMPLEMENTATION.md), [development evidence](docs/DEVELOPMENT_EVIDENCE.md), and [execution environment](docs/EXECUTION_ENVIRONMENT.md).
 
 ## Start here
 
@@ -58,7 +58,7 @@ notebooks/run_colab.ipynb # Person 2, jointly verified
 tests/                   # Split ownership by subsystem
 ```
 
-Use PyTorch and a BERT tokenizer; no dependency versions are selected yet. Implementation must establish a supported Python environment, explicit dependencies and tested commands. There is deliberately no fictional install/training command here.
+The supported target interpreter is Python 3.12. The verified local CPU environment is PyTorch 2.9.1+cpu, pytest 9.1.1 and ruff 0.14.14; cloud GPU commands remain explicitly unexecuted.
 
 ## Collaboration
 
