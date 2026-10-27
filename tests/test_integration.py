@@ -8,6 +8,7 @@ exercised without copying their production masking or geometry implementation.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import math
 import re
@@ -488,7 +489,11 @@ def test_geometry_from_synthetic_features_is_person1_side_only(
 def test_bridge_fails_clearly_without_person2_evaluate(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if importlib.util.find_spec("src.evaluate") is not None:
+        pytest.skip(
+            "Applies only to a person1-only tree; src/evaluate.py is present in this checkout"
+        )
     install_person2_stubs(monkeypatch)
-    monkeypatch.delitem(sys.modules, "src.evaluate")
+    monkeypatch.delitem(sys.modules, "src.evaluate", raising=False)
     with pytest.raises(RuntimeError, match="src/evaluate.py"):
         geometry_from_embeddings(torch.randn(4, 4))
