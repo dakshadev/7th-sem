@@ -1,6 +1,13 @@
 {
   "dataset_name": "Salesforce/wikitext",
   "config": "wikitext-2-raw-v1",
+  "corpus_role": "pilot",
+  "target_corpus_specification": {
+    "target_dataset": "Salesforce/wikitext",
+    "target_config": "wikitext-103-raw-v1",
+    "target_token_budget": "approximately 5 million tokens (proposal target)",
+    "pilot_note": "wikitext-2-raw-v1 is the pilot corpus (~2M tokens) used for rapid prototyping and validation; wikitext-103-raw-v1 is the primary pretraining target."
+  },
   "split": "train",
   "num_analyzed_samples": 3000,
   "total_tokens_raw": 362002,

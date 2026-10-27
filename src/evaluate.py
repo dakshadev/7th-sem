@@ -258,24 +258,24 @@ def freeze_model_for_evaluation(model: nn.Module) -> nn.Module:
     return model
 
 
-def load_student_checkpoint(
-    checkpoint: Union[str, Dict[str, Any]],
-    model: nn.Module,
-    strict: bool = True,
-) -> nn.Module:
+def read_checkpoint_payload(checkpoint: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
     """
-    Loads student weights from a checkpoint path or state dict.
-    Supports either direct state dict or nested training checkpoint dict
-    containing 'student_encoder', 'model', or 'encoder' keys.
-    Freezes model and returns it in eval mode.
+    Reads a checkpoint payload from a file path or dict.
+    Extracts student weights, model configuration, and training step.
+    Supports 'student', 'student_encoder', 'model', or 'encoder' keys.
     """
     if isinstance(checkpoint, str):
         state = torch.load(checkpoint, map_location="cpu")
     else:
         state = checkpoint
 
-    # Extract state dict if inside wrapper
-    if "student_encoder" in state:
+    if not isinstance(state, dict):
+        raise ValueError(f"Expected dict or checkpoint path, got {type(state)}")
+
+    # Extract student weights
+    if "student" in state:
+        weights = state["student"]
+    elif "student_encoder" in state:
         weights = state["student_encoder"]
     elif "model" in state:
         weights = state["model"]
@@ -284,8 +284,50 @@ def load_student_checkpoint(
     else:
         weights = state
 
+    # Read model configuration if present
+    model_config = state.get("model_config") or state.get("config")
+    step = state.get("step")
+
+    return {
+        "student_state_dict": weights,
+        "model_config": model_config,
+        "step": step,
+        "raw_checkpoint": state,
+    }
+
+
+def load_student_checkpoint(
+    checkpoint: Union[str, Dict[str, Any]],
+    model: nn.Module,
+    strict: bool = True,
+    return_config: bool = False,
+) -> Union[nn.Module, Tuple[nn.Module, Optional[Dict[str, Any]]]]:
+    """
+    Loads student weights from a checkpoint path or state dict.
+    Accepts 'student', 'student_encoder', 'model', or 'encoder' keys,
+    reads 'model_config' (or 'config'), attaches it to the model,
+    freezes the model, and puts it in eval mode.
+
+    Args:
+        checkpoint: File path or dictionary containing checkpoint.
+        model: Target PyTorch module to load weights into.
+        strict: Whether to strictly enforce state_dict key matching.
+        return_config: If True, returns tuple (frozen_model, model_config).
+                       If False, returns frozen_model.
+    """
+    payload = read_checkpoint_payload(checkpoint)
+    weights = payload["student_state_dict"]
+    model_config = payload["model_config"]
+
     model.load_state_dict(weights, strict=strict)
-    return freeze_model_for_evaluation(model)
+    model.model_config = model_config
+    model.config = model_config
+    frozen_model = freeze_model_for_evaluation(model)
+
+    if return_config:
+        return frozen_model, model_config
+    return frozen_model
+
 
 
 def evaluate_frozen_linear_probe(

@@ -26,6 +26,7 @@ artifacts/
 .cache/
 wandb/
 *.pt
+!results/tiny_batch.pt
 *.pth
 *.ckpt
 *.safetensors

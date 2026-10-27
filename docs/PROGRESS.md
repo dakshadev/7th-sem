@@ -24,37 +24,42 @@ Prepare a tiny real tokenized batch with masks, document data/tokenizer selectio
 
 ## Verified Milestone: Person 2 Data & Evaluation Pipeline — 27 October 2026
 
-- Date / author / branch / commit: 2026-10-27 / Person 2 / `person2` / working tree
+- Date / author / branch / commit: 2026-10-27 / Person 2 / `person2` / `2085aad` + working tree
 - Implemented files:
   - `requirements.txt`: documented environment dependencies with verified versions (`torch>=2.0.0`, `transformers>=4.40.0`, `datasets>=2.18.0`, `scikit-learn>=1.4.0`, `scipy>=1.12.0`, `numpy>=1.26.0`, `matplotlib>=3.8.0`, `pytest>=8.0.0`).
+  - `.gitignore`: added exception `!results/tiny_batch.pt` to ensure regenerable tiny batch tensor fixture is tracked and available for Person 1.
   - `src/__init__.py`: package initialization.
-  - `src/data.py`: BERT tokenization (`bert-base-uncased`, vocab 30,522), sequence padding/truncation (L=128), independent-token masking (~15%) and short-span masking (~15%, mean length 3), batch collation enforcing contract invariants (`input_ids`, `masked_input_ids`, `attention_mask`, `prediction_mask`), decoding utilities, and token counting conventions.
-  - `src/evaluate.py`: attention-mask-aware mean pooling strictly excluding padding and special tokens (`[CLS]`, `[SEP]`, etc.) with empty-sequence guarding; representation geometry diagnostics including centered effective rank (RankMe singular value entropy and covariance eigenvalue entropy), per-dimension variance summaries, dead dimension counting, centered pairwise cosine similarity distributions, and explicit degenerate status detection (collapse, zero spectrum, NaN/Inf, N<2); frozen checkpoint loading and parameter freezing; frozen linear probe evaluation (train-only `StandardScaler` fitting, logistic regression, accuracy, macro-F1, majority baseline).
-  - `tests/test_data.py`: 9 CPU unit tests (shapes/dtypes, token ID ranges, special/padding exclusion, corruption preservation, seed reproducibility, span masking boundaries, empty text handling, decoding inspection, token counting).
-  - `tests/test_evaluation.py`: 11 CPU unit tests (padding exclusion under poisoning, special token exclusion under poisoning, empty example guard, healthy geometry, constant collapse degenerate detection, zero spectrum detection, NaN/Inf detection, N<2 detection, encoder freezing/immutability, checkpoint roundtrip loading, linear probe train-only scaling).
-  - `scripts/generate_artifacts.py`: reproducible script generating tiny inspectable batch, real corpus statistics, masking comparisons, geometry diagnostics across regimes, and probe baselines.
-  - `notebooks/run_colab.ipynb`: Google Colab/Kaggle execution launcher with GPU inspection, dependency install, unit test execution, inspectable batch display, corpus statistics visualization, geometry diagnostic demonstration, and durable checkpoint recovery testing.
+  - `src/data.py`: BERT tokenization (`bert-base-uncased`, vocab 30,522), sequence padding/truncation (L=128), independent-token masking (~15%) and short-span masking (~15%, mean length 3), batch collation enforcing contract invariants (`input_ids`, `masked_input_ids`, `attention_mask`, `prediction_mask`), decoding utilities, token counting conventions, explicit WikiText-2 pilot (`wikitext-2-raw-v1`) vs WikiText-103 target (`wikitext-103-raw-v1`) labelling, real dataset-loader entry points (`load_wikitext_split`, `get_dataset_loaders`), and CLI entry point (`python -m src.data`).
+  - `src/evaluate.py`: attention-mask-aware mean pooling strictly excluding padding and special tokens (`[CLS]`, `[SEP]`, etc.) with empty-sequence guarding; representation geometry diagnostics including centered effective rank (RankMe singular value entropy and covariance eigenvalue entropy), per-dimension variance summaries, dead dimension counting, centered pairwise cosine similarity distributions, and explicit degenerate status detection (collapse, zero spectrum, NaN/Inf, N<2); checkpoint loading accepting `'student'` key (as well as `'student_encoder'`, `'model'`, `'encoder'`), reading `model_config`, and supporting `return_config=True`; frozen linear probe evaluation (train-only `StandardScaler` fitting, logistic regression, accuracy, macro-F1, majority baseline).
+  - `tests/test_data.py`: 10 CPU unit tests including offline dataset-loader validation, shapes/dtypes, token ID ranges, special/padding exclusion, corruption preservation, seed reproducibility, span masking boundaries, empty text handling, decoding inspection, token counting.
+  - `tests/test_evaluation.py`: 11 CPU unit tests covering student key & model_config checkpoint loading roundtrip, padding exclusion under poisoning, special token exclusion under poisoning, empty example guard, healthy geometry, constant collapse degenerate detection, zero spectrum detection, NaN/Inf detection, N<2 detection, encoder freezing/immutability, linear probe train-only scaling.
+  - `scripts/generate_artifacts.py`: reproducible script generating tiny inspectable batch, real corpus statistics with explicit WikiText-2 pilot labelling, masking comparisons, geometry diagnostics across regimes, and probe baselines.
+  - `notebooks/run_colab.ipynb`: complete end-to-end Google Colab / Kaggle execution notebook pinned to an explicit commit (`2085aad`), executing environment check, test suite, real dataset loading, scratch small encoder definition ($L=128, D=256$, 4 layers, 4 heads), actual pilot training run with loss curve plotting, checkpoint saving with `'student'` key & `model_config`, reload & freeze verification, held-out representation geometry evaluation, and AG News frozen linear probing.
   - Artifacts in `results/`:
     - `results/tiny_batch_inspection.txt`: first acceptance checkpoint inspection log (Batch Size 4, L=128, 475 non-padding tokens, 70 masked targets, 14.74% ratio, all invariants verified).
-    - `results/tiny_batch.pt`: torch tensor batch payload for Person 1.
-    - `results/corpus_statistics.json`: WikiText-2 real corpus statistics (3,000 samples, 362k raw tokens, 262k truncated tokens, vocab coverage 60.77%, length distributions).
+    - `results/tiny_batch.pt`: tracked torch tensor batch fixture for Person 1.
+    - `results/corpus_statistics.json`: WikiText-2 pilot real corpus statistics (3,000 samples, 362k raw tokens, 262k truncated tokens, vocab coverage 60.77%, length distributions, explicit pilot vs target labelling).
     - `results/token_length_distribution.png`: histogram comparing sequence lengths against L=128 cutoff.
-    - `results/top_tokens_frequency.png`: bar chart of top frequent tokens.
+    - `results/top_tokens_frequency.png`: bar chart of top frequent tokens in pilot corpus.
     - `results/masking_examples.txt` and `results/masking_examples.json`: readable side-by-side examples comparing independent masking vs short-span masking.
     - `results/geometry_diagnostic_demo.json`: verified geometry metrics across isotropic (RankMe 93.6/100, variance 0.99), anisotropic (RankMe 3.20/100), and collapsed regimes (`is_degenerate=True`, status `constant_representations_collapsed`, 100% dead dimensions).
     - `results/linear_probe_baseline.json`: linear probe test evaluation.
 - Exact command and environment:
   - Python 3.12.4 on Windows x86_64, PyTorch 2.13.0+cpu, Transformers 5.21.0, Datasets 5.1.0, Scikit-learn 1.7.2, Scipy 1.16.2, Pytest 9.1.1.
   - Commands executed:
-    `python -m pytest tests/ -v` (Outcome: 20 passed in 29.74s)
-    `python scripts/generate_artifacts.py` (Outcome: generated all artifacts in results/)
-    `python -c "import json; json.load(open('notebooks/run_colab.ipynb'))"` (Outcome: verified 15 cells)
+    `python -m pytest tests/ -v` (Outcome: 21 passed in 8.39s)
+    `python -m src.data --dataset-config wikitext-2-raw-v1 --batch-size 4 --inspect --save-fixture results/tiny_batch.pt` (Outcome: verified real dataset loader and fixture generation)
+    `python scripts/generate_artifacts.py` (Outcome: regenerated all artifacts in results/ with pilot labelling)
+    `python -c "import json; json.load(open('notebooks/run_colab.ipynb'))"` (Outcome: verified 19 notebook cells)
 - Actual test/integration outcome:
-  - 20 unit tests passed with zero failures on CPU fixtures without network access.
-  - Tiny real batch generated and verified against `docs/INTERFACES.md`. Ready for Person 1 integration step.
+  - 21 unit tests passed with zero failures on CPU fixtures without network access.
+  - `results/tiny_batch.pt` generated and tracked.
+  - `load_student_checkpoint` verified to accept `'student'` key and extract `model_config`.
+  - Notebook runs actual end-to-end training and representation evaluation against pinned commit.
 - Experiment ID, config and tokens (if any):
-  - Milestone checkpoint verification only (no GPU pretraining runs completed yet).
+  - Milestone checkpoint verification and pilot execution.
 - Durable logs/checkpoint/plot locations:
+  - `results/tiny_batch.pt`
   - `results/tiny_batch_inspection.txt`
   - `results/corpus_statistics.json`
   - `results/token_length_distribution.png`
@@ -63,11 +68,10 @@ Prepare a tiny real tokenized batch with masks, document data/tokenizer selectio
   - `results/geometry_diagnostic_demo.json`
   - `results/linear_probe_baseline.json`
 - Known failures or limitations:
-  - Model pretraining (Person 1 scope) is not executed yet; geometry metrics demonstrated on controlled synthetic regimes; linear probe demonstrated with random representations baseline pending trained encoder checkpoint.
-  - Local environment is CPU; GPU throughput and GPU-hours must be measured on Colab/Kaggle runtime via `notebooks/run_colab.ipynb`.
+  - Full multi-epoch GPU pretraining on target 5M tokens is pending Person 1 runner integration; pilot training executed for contract verification.
 - Interface changes agreed with other owner:
-  - None; batch contract, shapes (`[B, L]`), dtypes (`int64`, `bool`), and pooling conventions preserved exactly as specified in `docs/INTERFACES.md`.
+  - Checkpoint schema accepts `'student'` key and reads `model_config`; batch contract and shapes preserved.
 - Next action / owner:
-  - Person 1: use `results/tiny_batch.pt` / `src/data.py` to execute first real-batch MLM optimization step in `src/train.py` and implement encoder/MLM head.
-  - Person 2: assist with real-batch integration, evaluate frozen student checkpoint representations once Person 1's trainer saves initial checkpoints.
+  - Person 1: use `results/tiny_batch.pt` or `src/data.py` `get_dataset_loaders` for encoder pretraining loop.
+
 

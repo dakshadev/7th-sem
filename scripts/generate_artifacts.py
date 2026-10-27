@@ -156,6 +156,13 @@ def generate_corpus_statistics(tokenizer, output_dir="results"):
     stats = {
         "dataset_name": "Salesforce/wikitext",
         "config": "wikitext-2-raw-v1",
+        "corpus_role": "pilot",
+        "target_corpus_specification": {
+            "target_dataset": "Salesforce/wikitext",
+            "target_config": "wikitext-103-raw-v1",
+            "target_token_budget": "approximately 5 million tokens (proposal target)",
+            "pilot_note": "wikitext-2-raw-v1 is the pilot corpus (~2M tokens) used for rapid prototyping and validation; wikitext-103-raw-v1 is the primary pretraining target."
+        },
         "split": "train",
         "num_analyzed_samples": len(sample_texts),
         "total_tokens_raw": total_tokens_sampled,
@@ -198,7 +205,7 @@ def generate_corpus_statistics(tokenizer, output_dir="results"):
     plt.figure(figsize=(9, 5))
     plt.hist(raw_lengths, bins=50, range=(0, 300), alpha=0.6, color="#1f77b4", label="Raw Lengths", edgecolor="black")
     plt.axvline(128, color="#d62728", linestyle="--", linewidth=2, label="Pilot Cutoff (L=128)")
-    plt.title("WikiText-2 Sample: Sequence Length Distribution", fontsize=14, fontweight="bold")
+    plt.title("WikiText-2 Pilot: Sequence Length Distribution", fontsize=14, fontweight="bold")
     plt.xlabel("Tokens per Sequence (including [CLS], [SEP])", fontsize=11)
     plt.ylabel("Number of Sequences", fontsize=11)
     plt.legend(fontsize=11)
@@ -216,7 +223,7 @@ def generate_corpus_statistics(tokenizer, output_dir="results"):
     tok_counts = [t["count"] for t in top_15]
     plt.bar(range(len(top_15)), tok_counts, color="#2ca02c", edgecolor="black", alpha=0.85)
     plt.xticks(range(len(top_15)), tok_labels, rotation=45, ha="right", fontsize=10)
-    plt.title("WikiText-2 Sample: Most Frequent Tokens (bert-base-uncased)", fontsize=14, fontweight="bold")
+    plt.title("WikiText-2 Pilot: Most Frequent Tokens (bert-base-uncased)", fontsize=14, fontweight="bold")
     plt.xlabel("Token", fontsize=11)
     plt.ylabel("Occurrences", fontsize=11)
     plt.grid(True, axis="y", linestyle=":", alpha=0.6)
@@ -225,6 +232,7 @@ def generate_corpus_statistics(tokenizer, output_dir="results"):
     plt.savefig(plot2_path, dpi=200)
     plt.close()
     print(f"Saved token frequency plot to {plot2_path}")
+
 
     return clean_texts
 

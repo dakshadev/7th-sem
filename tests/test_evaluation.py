@@ -178,20 +178,36 @@ def test_encoder_weights_frozen_during_evaluation():
 
 
 def test_checkpoint_loading_roundtrip(tmp_path):
-    """Verify loading student weights from a saved checkpoint dictionary."""
+    """Verify loading student weights and model_config from saved checkpoint dictionaries."""
     model = DummyEncoder(vocab_size=500, hidden_dim=32)
-    checkpoint_path = tmp_path / "student_checkpoint.pt"
+    checkpoint_path_1 = tmp_path / "student_checkpoint_1.pt"
+    checkpoint_path_2 = tmp_path / "student_checkpoint_2.pt"
 
-    # Save checkpoint with wrapper dict matching Person 1 checkpoint convention
-    torch.save({"student_encoder": model.state_dict(), "step": 100}, checkpoint_path)
+    config_payload = {"hidden_dim": 32, "vocab_size": 500, "num_layers": 4}
 
-    new_model = DummyEncoder(vocab_size=500, hidden_dim=32)
-    loaded_model = load_student_checkpoint(str(checkpoint_path), new_model)
+    # 1. Test 'student_encoder' key
+    torch.save(
+        {"student_encoder": model.state_dict(), "step": 100, "config": config_payload},
+        checkpoint_path_1,
+    )
+    new_model_1 = DummyEncoder(vocab_size=500, hidden_dim=32)
+    loaded_1 = load_student_checkpoint(str(checkpoint_path_1), new_model_1)
+    assert not loaded_1.training
+    assert loaded_1.model_config == config_payload
 
-    assert not loaded_model.training
-    for p1, p2 in zip(model.parameters(), loaded_model.parameters()):
+    # 2. Test 'student' key and model_config field with return_config=True
+    torch.save(
+        {"student": model.state_dict(), "step": 200, "model_config": config_payload},
+        checkpoint_path_2,
+    )
+    new_model_2 = DummyEncoder(vocab_size=500, hidden_dim=32)
+    loaded_2, cfg = load_student_checkpoint(str(checkpoint_path_2), new_model_2, return_config=True)
+    assert not loaded_2.training
+    assert cfg == config_payload
+    for p1, p2 in zip(model.parameters(), loaded_2.parameters()):
         assert torch.equal(p1, p2)
         assert not p2.requires_grad
+
 
 
 def test_frozen_linear_probe_train_only_scaling():

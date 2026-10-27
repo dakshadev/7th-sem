@@ -22,6 +22,13 @@ DEFAULT_MASK_RATIO = 0.15
 DEFAULT_MEAN_SPAN_LENGTH = 3
 DEFAULT_MAX_SPAN_LENGTH = 5
 
+# Explicit WikiText corpus labelling:
+# - WikiText-2 is the small pilot corpus (~2M tokens raw, ~36k lines) for rapid prototyping and smoke tests.
+# - WikiText-103 is the primary target corpus (~100M tokens raw, proposal target ~5M tokens subset).
+WIKITEXT_PILOT_CONFIG = "wikitext-2-raw-v1"
+WIKITEXT_TARGET_CONFIG = "wikitext-103-raw-v1"
+WIKITEXT_DATASET_NAME = "Salesforce/wikitext"
+
 
 def get_bert_tokenizer(tokenizer_name: str = DEFAULT_TOKENIZER_NAME) -> BertTokenizerFast:
     """
@@ -418,3 +425,169 @@ def count_tokens_in_batch(batch: Dict[str, torch.Tensor]) -> Dict[str, int]:
         "nonpadding_tokens": int(batch["attention_mask"].sum().item()),
         "masked_targets": int(batch["prediction_mask"].sum().item()),
     }
+
+
+def load_wikitext_split(
+    dataset_config: str = WIKITEXT_PILOT_CONFIG,
+    split: str = "train",
+    min_length_chars: int = 30,
+    max_samples: Optional[int] = None,
+    dataset_name: str = WIKITEXT_DATASET_NAME,
+) -> Tuple[List[str], Dict[str, Any]]:
+    """
+    Loads text segments from a specified split of WikiText.
+    Explicitly distinguishes between:
+      - wikitext-2-raw-v1: Small pilot corpus (~2M tokens raw).
+      - wikitext-103-raw-v1: Primary target corpus (~100M tokens raw, proposal target ~5M tokens subset).
+
+    Filters out empty lines and isolated section headers below min_length_chars.
+
+    Returns:
+        clean_texts: List of filtered document text strings.
+        manifest: Dictionary with dataset metadata, revision info, and counts.
+    """
+    from datasets import load_dataset
+
+    ds = load_dataset(dataset_name, dataset_config, split=split)
+    clean_texts = []
+    for item in ds:
+        text = item.get("text", "").strip()
+        if len(text) >= min_length_chars:
+            clean_texts.append(text)
+            if max_samples is not None and len(clean_texts) >= max_samples:
+                break
+
+    role_label = "pilot" if "wikitext-2" in dataset_config else "target"
+    manifest = {
+        "dataset_name": dataset_name,
+        "dataset_config": dataset_config,
+        "corpus_role": role_label,
+        "split": split,
+        "raw_examples_scanned": len(ds),
+        "clean_examples_retained": len(clean_texts),
+        "min_length_chars": min_length_chars,
+    }
+    return clean_texts, manifest
+
+
+def get_dataset_loaders(
+    dataset_config: str = WIKITEXT_PILOT_CONFIG,
+    batch_size: int = 16,
+    max_length: int = DEFAULT_MAX_LENGTH,
+    mask_ratio: float = DEFAULT_MASK_RATIO,
+    mask_mode: str = "independent",
+    seed: int = 42,
+    max_train_samples: Optional[int] = None,
+    max_val_samples: Optional[int] = None,
+    num_workers: int = 0,
+    tokenizer: Optional[PreTrainedTokenizerFast] = None,
+) -> Tuple[DataLoader, DataLoader, Dict[str, Any]]:
+    """
+    Real dataset-loader entry point for pretraining and validation.
+    Loads real WikiText training and validation splits, constructs DataLoaders
+    enforcing docs/INTERFACES.md batch contracts.
+
+    Validation loader uses deterministic per-sample seeds for reproducible evaluation masks.
+
+    Returns:
+        train_loader: DataLoader yielding batched contract tensors
+        val_loader: DataLoader yielding batched contract tensors
+        manifest: Dictionary containing dataset configuration, sample counts, and parameters.
+    """
+    if tokenizer is None:
+        tokenizer = get_bert_tokenizer(DEFAULT_TOKENIZER_NAME)
+
+    train_texts, train_manifest = load_wikitext_split(
+        dataset_config=dataset_config,
+        split="train",
+        max_samples=max_train_samples,
+    )
+    val_texts, val_manifest = load_wikitext_split(
+        dataset_config=dataset_config,
+        split="validation",
+        max_samples=max_val_samples,
+    )
+
+    train_loader = create_dataloader(
+        texts=train_texts,
+        tokenizer=tokenizer,
+        batch_size=batch_size,
+        shuffle=True,
+        max_length=max_length,
+        mask_ratio=mask_ratio,
+        mask_mode=mask_mode,
+        seed=None,
+        num_workers=num_workers,
+    )
+
+    val_loader = create_dataloader(
+        texts=val_texts,
+        tokenizer=tokenizer,
+        batch_size=batch_size,
+        shuffle=False,
+        max_length=max_length,
+        mask_ratio=mask_ratio,
+        mask_mode=mask_mode,
+        seed=seed,  # Deterministic validation masks
+        num_workers=num_workers,
+    )
+
+    manifest = {
+        "dataset_name": WIKITEXT_DATASET_NAME,
+        "dataset_config": dataset_config,
+        "corpus_role": "pilot" if "wikitext-2" in dataset_config else "target",
+        "train_samples": len(train_texts),
+        "val_samples": len(val_texts),
+        "batch_size": batch_size,
+        "max_length": max_length,
+        "mask_ratio": mask_ratio,
+        "mask_mode": mask_mode,
+        "seed": seed,
+    }
+
+    return train_loader, val_loader, manifest
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Dataset Loader & Batch Generator CLI")
+    parser.add_argument("--dataset-config", default=WIKITEXT_PILOT_CONFIG, choices=[WIKITEXT_PILOT_CONFIG, WIKITEXT_TARGET_CONFIG],
+                        help="WikiText config: wikitext-2-raw-v1 (pilot) or wikitext-103-raw-v1 (target)")
+    parser.add_argument("--batch-size", type=int, default=4, help="Batch size")
+    parser.add_argument("--max-length", type=int, default=128, help="Sequence length cutoff")
+    parser.add_argument("--mask-ratio", type=float, default=0.15, help="Proportion of eligible tokens to mask")
+    parser.add_argument("--mask-mode", default="independent", choices=["independent", "span"], help="Masking mode")
+    parser.add_argument("--save-fixture", type=str, default=None, help="Optional path to save tiny batch tensor .pt")
+    parser.add_argument("--inspect", action="store_true", help="Print inspection of first batch")
+    args = parser.parse_args()
+
+    print(f"Loading dataset: {args.dataset_config} (role: {'pilot' if 'wikitext-2' in args.dataset_config else 'target'})...")
+    tokenizer = get_bert_tokenizer()
+    train_loader, val_loader, manifest = get_dataset_loaders(
+        dataset_config=args.dataset_config,
+        batch_size=args.batch_size,
+        max_length=args.max_length,
+        mask_ratio=args.mask_ratio,
+        mask_mode=args.mask_mode,
+        max_train_samples=20,
+        max_val_samples=10,
+        tokenizer=tokenizer,
+    )
+    print(f"Loaded train loader with {len(train_loader.dataset)} samples, val loader with {len(val_loader.dataset)} samples.")
+    batch = next(iter(train_loader))
+    counts = count_tokens_in_batch(batch)
+    print(f"Batch Contract Verified:")
+    for k, v in batch.items():
+        print(f"  {k:18s} shape={list(v.shape)} dtype={v.dtype}")
+    print(f"Tokens counted: {counts}")
+
+    if args.save_fixture:
+        torch.save(batch, args.save_fixture)
+        print(f"Saved fixture to {args.save_fixture}")
+
+    if args.inspect:
+        decoded = decode_masked_example(batch["input_ids"][0], batch["masked_input_ids"][0], batch["prediction_mask"][0], tokenizer)
+        print(f"\nExample 1 Original:  {decoded['original_text'][:100]}...")
+        print(f"Example 1 Corrupted: {decoded['corrupted_text'][:100]}...")
+        print(f"Example 1 Targets ({decoded['num_masked']}): {decoded['target_tokens']}")
+

@@ -202,3 +202,48 @@ def test_count_tokens_in_batch(tokenizer, sample_texts):
     assert counts["nonpadding_tokens"] > 0
     assert counts["masked_targets"] > 0
     assert counts["masked_targets"] < counts["nonpadding_tokens"]
+
+
+def test_get_dataset_loaders_offline(tokenizer, monkeypatch):
+    """Verify get_dataset_loaders returns valid DataLoaders and manifest offline without network."""
+    from src import data
+
+    dummy_train = [
+        "First research sample text for unit testing the real loader entry point.",
+        "Second text sample ensuring sufficient sequence length and token variety.",
+    ]
+    dummy_val = [
+        "Held out validation sequence for deterministic evaluation masking testing.",
+    ]
+
+    def mock_load_wikitext_split(dataset_config, split, min_length_chars=30, max_samples=None, **kwargs):
+        texts = dummy_train if split == "train" else dummy_val
+        manifest = {
+            "dataset_config": dataset_config,
+            "corpus_role": "pilot" if "wikitext-2" in dataset_config else "target",
+            "split": split,
+            "clean_examples_retained": len(texts),
+        }
+        return texts, manifest
+
+    monkeypatch.setattr(data, "load_wikitext_split", mock_load_wikitext_split)
+
+    train_loader, val_loader, manifest = data.get_dataset_loaders(
+        dataset_config=data.WIKITEXT_PILOT_CONFIG,
+        batch_size=2,
+        max_length=64,
+        tokenizer=tokenizer,
+    )
+
+    assert manifest["corpus_role"] == "pilot"
+    assert manifest["dataset_config"] == data.WIKITEXT_PILOT_CONFIG
+    assert manifest["train_samples"] == 2
+    assert manifest["val_samples"] == 1
+
+    train_batch = next(iter(train_loader))
+    assert train_batch["input_ids"].shape == (2, 64)
+    assert train_batch["prediction_mask"].shape == (2, 64)
+
+    val_batch = next(iter(val_loader))
+    assert val_batch["input_ids"].shape == (1, 64)
+
