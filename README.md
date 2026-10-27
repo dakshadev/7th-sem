@@ -78,22 +78,35 @@ larger share of the update budget is not established here.
 
 ### 3. The uncomfortable result — frozen linear probe on AG News
 
-4,000 probe-train / 1,000 held-out, identical probe for every student:
+4,000 probe-train / 1,000 held-out, identical probe and identical seed for every student.
 
-| Student | Accuracy | Macro-F1 |
-|---|---|---|
-| C — MLM (17 / 43) | 0.575 / 0.577 | 0.570 / 0.568 |
-| A — latent (17 / 43) | 0.589 / 0.588 | 0.586 / 0.582 |
-| B — latent (17 / 43) | 0.593 / 0.585 | 0.590 / 0.579 |
-| **Random-init reference, same architecture** | **0.632** | **0.628** |
-| Majority-class baseline | 0.274 | — |
+**Budget sweep, learning rate annealed to zero in every run** (`results/person1/sweep_annealed.json`):
 
-**Every trained student scores below a randomly initialised encoder.** At 700k tokens — three
-orders of magnitude below BERT-scale pretraining — the encoders have not yet produced features
-that beat an untrained one on this probe. The result is reported as found, because it is the
-project's most useful finding: at this scale the binding constraint is budget, not recipe. One
-contributing factor is the train/evaluation mismatch inherent in the contract (train on masked
-inputs, evaluate on clean ones), which a long run outgrows but a 0.7M-token run does not.
+| Budget | C — MLM | A — latent | B — latent | Random-init |
+|---|---|---|---|---|
+| 0.69M tokens (seed 17 / 43) | 0.579 / 0.574 | 0.591 / 0.588 | 0.595 / 0.577 | **0.632** |
+| 5.00M tokens (seed 17 / 43) | 0.529 / 0.534 | 0.544 / 0.554 | 0.524 / 0.550 | **0.632** |
+
+Mean of the two seeds, 0.69M → 5M: C 0.577 → 0.532, A 0.589 → 0.549, B 0.586 → 0.537.
+Majority-class baseline: 0.274.
+
+**Two findings, both negative and both consistent across every condition and both seeds:**
+
+1. **No trained student ever beats a randomly initialised encoder.** The best run reaches 0.595
+   against 0.632 for the untrained model.
+2. **More pretraining makes transfer worse, not better.** A 7× larger budget costs every
+   condition 0.04–0.05 accuracy, while the training losses improve over the same range
+   (MLM 7.22 → 7.25, latent B 0.146 → 0.088).
+
+The leading explanation is a train/evaluation mismatch: training consumes *masked* input,
+the probe consumes *clean* input, and longer training makes the encoder better at the masked
+task and less useful as a general text encoder at this scale. That is a hypothesis, not a
+finding — the next experiment probes the same checkpoints on masked input to test it.
+
+An earlier pass of this sweep (`results/person1/sweep_pass1_no_annealing.json`) compared both
+budgets with `max_updates=40000`, so neither run's learning-rate schedule reached zero. That
+confounded budget with schedule; it is kept for the record and must not be cited as the budget
+comparison.
 
 ### 4. Objective 1 — how ambiguous is masked text, really?
 
@@ -121,7 +134,8 @@ large gap; with 400 records it disappears. The 400-record result is the one we r
 
 ## Limitations (stated up front)
 
-- 700k tokens is 14% of the proposed budget and far below the regime the literature describes.
+- Even 5M tokens is three orders of magnitude below BERT-scale pretraining; nothing here speaks
+  to what these objectives do at scale.
 - Two seeds bound run-to-run stability; they are not confidence intervals.
 - Ablations D–G are single-seed, so their differences cannot be separated from seed noise.
 - A random 4-layer encoder is a strong baseline on an easy 4-class task.
@@ -195,8 +209,9 @@ One shared encoder and one runner; never two incompatible models. Changes to sha
 
 ## Roadmap to the final submission
 
-1. **Budget sweep** — 0.7M → 5M tokens on WikiText-103, C/A/B × 2 seeds, probe and geometry at
-   each tier, to find whether (and where) transfer overtakes the random-initialised reference.
+1. ~~**Budget sweep** — 0.7M → 5M tokens on WikiText-103, C/A/B × 2 seeds, probe at each tier.~~
+   **Done.** Answer: transfer does not overtake the reference at either budget; it degrades.
+   Next experiment isolates the masked-versus-clean input mismatch as the cause.
 2. **Ablations at full budget** with probes, two seeds — currently loss-only, single-seed.
 3. **SIGReg (recipe H)** — proposed but not yet implemented.
 4. **Second probe (SST-2)** so that one easy task cannot carry the conclusion.

@@ -117,3 +117,16 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Known limitations: 14% of the proposed budget; two seeds; D–G single-seed; probe task easy for random features.
 - Fixed in passing: `run_pilot` recorded the deprecated `objective.variant` (always empty) instead of `label`; corrected after these runs, so artifact label fields are empty and labels are derived from config paths.
 - Next action / owner: Person 1 — full 5M-token budget, then D–G with probes at that budget.
+
+## Budget sweep — 0.69M vs 5M tokens, annealed — 27 October 2026
+
+- Date / author / commit: 2026-10-27 / Person 1 / `5f20e6a`
+- Runtime: Kaggle committed kernel `dakshasubramanya/7th-sem-budget-sweep` (v3), GPU T4 x2, torch 2.11.0+cu128, ~50 minutes.
+- Design: 3 objectives × 2 seeds × 2 budgets on WikiText-103 (90k records, seq 128, batch 8, mask 0.15). `max_updates` derived from each budget (`budget/575`) so the linear schedule reaches zero in every run.
+- Training: 0.69M runs stop at 692,919 tokens / 1,217 updates; 5M runs at 5,000,623 tokens / 8,668 updates; all stop_reason `budget`.
+- Probe (AG News, 4,000/1,000, seed 42, frozen): 0.69M → C 0.579/0.574, A 0.591/0.588, B 0.595/0.577. 5M → C 0.529/0.534, A 0.544/0.554, B 0.524/0.550. Random-init 0.632, majority 0.274.
+- Findings: (1) no condition beats the random-init encoder at either budget; (2) a 7× larger budget costs every condition 0.04–0.05 accuracy while training loss improves.
+- Hypothesis (not yet tested): longer training specialises the encoder to masked input while the probe consumes clean input.
+- Evidence: `results/person1/sweep_annealed.json`, `docs/figures/fig_budget.png`.
+- Superseded: `results/person1/sweep_pass1_no_annealing.json` — same sweep with `max_updates=40000` for both budgets, so neither schedule annealed. Do not cite as the budget comparison.
+- Bugs found and fixed in the kernel: (a) `run_probe.py` launched as a script puts `scripts/` on `sys.path`, so `import src` failed — `PYTHONPATH` now set per subprocess; (b) probe re-run was moved to a separate kernel (`7th-sem-probe-only`) that mounts the sweep output rather than retraining.
