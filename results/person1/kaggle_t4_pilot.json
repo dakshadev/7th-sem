@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "purpose": "Bounded GPU pilot of the three training variants on a free Kaggle Tesla T4, followed by frozen representation geometry on the WikiText-2 validation split.",
+  "status": "bounded_pilot_only",
+  "commit": "fbc93dbaaf44fa325d15dfdd784afe09ed820a94",
+  "branch": "integration/person1-person2",
+  "runtime": {
+    "platform": "Kaggle notebook (free tier)",
+    "gpu": "Tesla T4, 15360 MiB",
+    "torch": "2.11.0+cu128",
+    "cuda_available": true,
+    "device_used": "cuda",
+    "cuda_verified_by": "torch.cuda.is_available() and torch.cuda.get_device_name(0) inside the run"
+  },
+  "data": {
+    "dataset": "Salesforce/wikitext",
+    "config": "wikitext-2-raw-v1",
+    "split_train": "train",
+    "split_eval": "validation",
+    "max_records": 400,
+    "max_length": 128,
+    "batch_size": 8,
+    "mask_ratio": 0.15,
+    "seed": 17,
+    "counts_per_artifact": {
+      "records": 400,
+      "batches": 50,
+      "nonpadding_tokens": 22833,
+      "masked_targets": 3333
+    },
+    "independent_artifact_sha256": "81f3138031f775a0415899b5ba20da3963ab8c8ae68f0f694c8c0752de7f9184",
+    "span_artifact_sha256": "eec1ee078c5f9477216d43d26177e2ca281196ade9fc21ca7cd663573d8bb0ae",
+    "limitations": [
+      "WikiText-2 pilot subset, not the proposed ~5M-token WikiText-103 budget (22833 tokens = 0.46% of that target).",
+      "Dataset streaming order is not revision-pinned; the artifact hash identifies the exact selected subset.",
+      "Single seed; no second-seed replication."
+    ]
+  },
+  "runs": {
+    "mlm": {
+      "config": "configs/mlm_c.json",
+      "device": "cuda",
+      "updates": 50,
+      "nonpadding_tokens": 22833,
+      "masked_targets": 3333,
+      "first_train_loss": 10.52585506439209,
+      "last_train_loss": 9.18316650390625,
+      "training_wall_clock_seconds": 2.732159298000056,
+      "step_seconds_first_step": 2.449891263999916,
+      "stop_reason": "interrupted (segment_updates=50 cap)",
+      "student_sha256": "71474288be4d10bf64ba35070026fa255e3ccc9c89a665e271c443269b711b8f"
+    },
+    "latent_a": {
+      "config": "configs/latent_a.json",
+      "device": "cuda",
+      "updates": 50,
+      "nonpadding_tokens": 22833,
+      "masked_targets": 3333,
+      "first_train_loss": 2.014014720916748,
+      "last_train_loss": 1.331831932067871,
+      "training_wall_clock_seconds": 2.6639123960000006,
+      "step_seconds_first_step": 2.3954755180002394,
+      "stop_reason": "interrupted (segment_updates=50 cap)",
+      "student_sha256": "52c84fac1692c4907fdea26ef4bf95e528b80024a9e122bb554fdc21f43aa515"
+    },
+    "latent_b": {
+      "config": "configs/latent_b.json",
+      "device": "cuda",
+      "updates": 50,
+      "nonpadding_tokens": 22833,
+      "masked_targets": 3333,
+      "first_train_loss": 0.5634583234786987,
+      "last_train_loss": 0.4343273937702179,
+      "training_wall_clock_seconds": 2.232897020999985,
+      "step_seconds_first_step": 1.9890265339995494,
+      "stop_reason": "interrupted (segment_updates=50 cap)",
+      "student_sha256": "f3891586f5caf9ee6a0134ff0dabc68987dbffccae1d0fa091a127cb3a849254"
+    }
+  },
+  "geometry_wikitext2_validation": {
+    "records": 200,
+    "batch_size": 8,
+    "frozen": true,
+    "uncorrupted_inputs": true,
+    "mlm": {
+      "effective_rank_singular": 70.35727059532447,
+      "effective_rank_covariance": 2.758647711704442,
+      "is_degenerate": false,
+      "status": "healthy"
+    },
+    "latent_a": {
+      "effective_rank_singular": 85.18249405124772,
+      "effective_rank_covariance": 4.792297730021465,
+      "is_degenerate": false,
+      "status": "healthy"
+    },
+    "latent_b": {
+      "effective_rank_singular": 86.88224911047134,
+      "effective_rank_covariance": 5.448395963113125,
+      "is_degenerate": false,
+      "status": "healthy"
+    },
+    "not_run": [
+      "linear probe (AG News) \u2014 no labelled split supplied to the bridge",
+      "token-level geometry",
+      "GPU throughput/memory benchmark",
+      "second seed"
+    ]
+  },
+  "test_suite_in_cloud": {
+    "passed": 53,
+    "skipped": 1,
+    "note": "local CPU run reports 52 passed / 2 skipped; the CUDA-only resume test executes on the GPU runtime"
+  },
+  "integrity_caveats": [
+    "Loss values are not comparable across objectives (cross-entropy vs MSE vs Smooth L1).",
+    "Falling loss does not establish non-collapse or useful transfer.",
+    "stop_reason 'interrupted' reflects the deliberate 50-update segment cap, not a completed training run.",
+    "No result here supports a research claim about which design choice matters."
+  ]
+}

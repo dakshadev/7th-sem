@@ -70,3 +70,17 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Known failures or limitations: Person 2's `src/data.py`/`src/evaluate.py` are not on `person1`; the scripts fail clearly rather than vendoring them, and the manual harness was not a Git repository (so its manifests record `code_commit: "unavailable"`). Person 2's `load_student_checkpoint` does not recognise Person 1's `"student"` key; `src/evaluate_bridge.py` reads both shapes and can emit a `student_encoder` wrapper, but the durable fix must be agreed and tested on `person2`. No real WikiText subset, GPU run, probe, or cloud execution was performed. No cloud result is claimed.
 - Interface changes agreed with other owner: None. The documented batch contract, split isolation and evaluation rules are preserved.
 - Next action / owner: Person 1/owner — coordinate with Person 2 on the `"student"` checkpoint-key fix, then execute `docs/COLAB_RUNBOOK.md` on a free GPU runtime and record actual commands, tests, token counts, wall time and artifact hashes. Person 2 — accept the Person 1 export key (or wrapper) with a schema test; keep `src/data.py`/`src/evaluate.py` ownership on `person2`.
+
+## GPU pilot — Kaggle Tesla T4 — 27 October 2026
+
+- Date / author / branch / commit: 2026-10-27 / Person 1 / `integration/person1-person2` / `fbc93db`
+- Runtime: Kaggle free tier, Tesla T4 15360 MiB, Torch 2.11.0+cu128, `torch.cuda.is_available() == True`, trainer device `cuda`.
+- Colab free tier refused to allocate a backend from this location, so Kaggle was used instead.
+- Data: WikiText-2 raw train split, 400 records, 50 batches, 22,833 non-padding tokens, 3,333 masked targets (0.46% of the proposed ~5M-token budget).
+- Actual test suite in the cloud runtime: `python -m pytest -q` → 53 passed, 1 skipped.
+- Measured pilots (50 updates each): MLM 10.5259 → 9.1832 in 2.73 s; latent A 2.0140 → 1.3318 in 2.66 s; latent B 0.5635 → 0.4343 in 2.23 s. All three report `stop_reason: interrupted` because of the deliberate 50-update segment cap.
+- Frozen geometry on WikiText-2 validation (200 records): MLM rank(singular/covariance) 70.36 / 2.76; latent A 85.18 / 4.79; latent B 86.88 / 5.45 — all `healthy`, none degenerate.
+- Durable evidence: `docs/PERSON1_GPU_PILOT.md`, `results/person1/kaggle_t4_pilot.json`. Student export SHA-256 values are recorded there.
+- Known limitations: single seed, bounded subset, no linear probe, no GPU throughput benchmark, objective losses not comparable.
+- Interface changes agreed with other owner: none; the span/independent masking fix (special-token eligibility) needs to land on `person2` — see `docs/PERSON2_REVIEW.md`.
+- Next action / owner: Person 1 — run the deferred AG News probe and a second seed; Person 2 — apply the masking fix, stop installing `torch` from `requirements.txt`, re-pin the notebook commit.
