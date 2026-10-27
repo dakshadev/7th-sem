@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "purpose": "Scaled bounded pilot: ~0.7M tokens per run, two seeds for the three anchors, one seed for D-G ablations, on a free Kaggle T4.",
+  "commit": "ee8676b",
+  "runtime": {
+    "platform": "Kaggle free tier",
+    "gpu": "Tesla T4, 15360 MiB",
+    "torch": "2.11.0+cu128",
+    "cuda_available": true,
+    "device_used": "cuda"
+  },
+  "budget": {
+    "per_run_nonpadding_tokens": 700482,
+    "per_run_updates": 1230,
+    "per_run_masked_targets": 102721,
+    "fraction_of_proposed_5M_target": 0.14,
+    "dataset": "Salesforce/wikitext wikitext-2-raw-v1 train split, 12000 records, length 128, batch 8"
+  },
+  "long": [
+    {
+      "run": "s17-mlm",
+      "label": "C",
+      "config": "configs/mlm_c.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 10.52585506439209,
+      "last_loss": 7.78394889831543,
+      "training_wall_clock_seconds": 47.17558632200053,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s43-mlm",
+      "label": "C",
+      "config": "configs/mlm_c.json",
+      "seed": 43,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 10.443861961364746,
+      "last_loss": 7.944626331329346,
+      "training_wall_clock_seconds": 49.42645380999966,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s17-latent_a",
+      "label": "A",
+      "config": "configs/latent_a.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 2.014014720916748,
+      "last_loss": 0.5051940083503723,
+      "training_wall_clock_seconds": 44.62644901800013,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s43-latent_a",
+      "label": "A",
+      "config": "configs/latent_a.json",
+      "seed": 43,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 2.018090009689331,
+      "last_loss": 0.5186514854431152,
+      "training_wall_clock_seconds": 44.99268843699974,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s17-latent_b",
+      "label": "B",
+      "config": "configs/latent_b.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 0.5634583234786987,
+      "last_loss": 0.15001583099365234,
+      "training_wall_clock_seconds": 35.95107523000024,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s43-latent_b",
+      "label": "B",
+      "config": "configs/latent_b.json",
+      "seed": 43,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 0.5758305788040161,
+      "last_loss": 0.15440040826797485,
+      "training_wall_clock_seconds": 35.20594956200057,
+      "stop_reason": "budget",
+      "device": "cuda"
+    }
+  ],
+  "ablations": [
+    {
+      "run": "s17-ablation_d",
+      "label": "D",
+      "config": "configs/ablation_d.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 1.8181507587432861,
+      "last_loss": 0.3584272563457489,
+      "training_wall_clock_seconds": 44.89151089000006,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s17-ablation_e",
+      "label": "E",
+      "config": "configs/ablation_e.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 2.0371005535125732,
+      "last_loss": 0.513154923915863,
+      "training_wall_clock_seconds": 45.291356188000464,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s17-ablation_f",
+      "label": "F",
+      "config": "configs/ablation_f.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 1.6132649183273315,
+      "last_loss": 0.901536226272583,
+      "training_wall_clock_seconds": 35.348607647999415,
+      "stop_reason": "budget",
+      "device": "cuda"
+    },
+    {
+      "run": "s17-ablation_g",
+      "label": "G",
+      "config": "configs/ablation_g.json",
+      "seed": 17,
+      "updates": 1230,
+      "nonpadding_tokens": 700482,
+      "masked_targets": 102721,
+      "first_loss": 0.7221214771270752,
+      "last_loss": 0.23948806524276733,
+      "training_wall_clock_seconds": 44.78550547499981,
+      "stop_reason": "budget",
+      "device": "cuda"
+    }
+  ],
+  "short": [
+    {
+      "label": "C",
+      "tokens": 22833,
+      "last_loss": 9.18316650390625,
+      "seconds": 2.73
+    },
+    {
+      "label": "A",
+      "tokens": 22833,
+      "last_loss": 1.331831932067871,
+      "seconds": 2.66
+    },
+    {
+      "label": "B",
+      "tokens": 22833,
+      "last_loss": 0.4343273937702179,
+      "seconds": 2.23
+    }
+  ],
+  "notes": [
+    "stop_reason \"budget\" means the configured token budget was reached, not a step cap.",
+    "Losses are objective-specific and must not be compared across objectives.",
+    "pilot.json in these artifacts records an empty \"variant\" field because the runner wrote the deprecated attribute; the label here is derived from config_path and the run name. The runner is fixed in a later commit."
+  ]
+}

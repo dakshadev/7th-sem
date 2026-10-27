@@ -1,0 +1,327 @@
+{
+  "schema_version": 1,
+  "commit": "ee8676b",
+  "runtime": {
+    "device": "cuda",
+    "gpu": "Tesla T4",
+    "torch": "2.11.0+cu128",
+    "cuda_available": true
+  },
+  "probe": "frozen linear probe, StandardScaler + LogisticRegression fit on train split only",
+  "students": {
+    "s17-mlm": {
+      "student": "/kaggle/working/long/s17-mlm/student.pt",
+      "student_sha256": "ae8b07245be294ef10cae8fd1ec5760dde16636a66998e1bc9a4c45d9d6de926",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.575,
+      "macro_f1": 0.5703909148928783,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    },
+    "s17-latent_a": {
+      "student": "/kaggle/working/long/s17-latent_a/student.pt",
+      "student_sha256": "db1e7db3ca455674fd85a39c39f436e41e88bd217585e49a1d85e9bb39569dda",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.589,
+      "macro_f1": 0.5860088871433322,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    },
+    "s17-latent_b": {
+      "student": "/kaggle/working/long/s17-latent_b/student.pt",
+      "student_sha256": "d742f83bd16280546c3cb4dbf6a708786b44f1b81d1b09d165764c09a173cc7b",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.593,
+      "macro_f1": 0.5897726121178806,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    },
+    "s43-mlm": {
+      "student": "/kaggle/working/long/s43-mlm/student.pt",
+      "student_sha256": "0808508069382128e34593616015ff7dc7b9cbfb82f107dfec24e1d78a878546",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.577,
+      "macro_f1": 0.567894820162471,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    },
+    "s43-latent_a": {
+      "student": "/kaggle/working/long/s43-latent_a/student.pt",
+      "student_sha256": "05d44de96f71e05129de86c57b17ad689b59bccd1b5e11399c40aa5a44cd53c2",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.588,
+      "macro_f1": 0.58181861869369,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    },
+    "s43-latent_b": {
+      "student": "/kaggle/working/long/s43-latent_b/student.pt",
+      "student_sha256": "052d4d6bddcebdc964808288656e97d0a634d7a8fb83f378f07d82b1a80b8bd8",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 4000,
+        "used": 4000,
+        "class_counts": {
+          "0": 998,
+          "1": 797,
+          "2": 988,
+          "3": 1217
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 1000,
+        "used": 1000,
+        "class_counts": {
+          "0": 268,
+          "1": 274,
+          "2": 205,
+          "3": 253
+        }
+      },
+      "feature_shape": [
+        4000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.585,
+      "macro_f1": 0.5794079916466224,
+      "majority_baseline": 0.274,
+      "train_samples": 4000,
+      "test_samples": 1000,
+      "num_classes": 4
+    }
+  },
+  "random_baseline": {
+    "student": "random-initialised SmallEncoder (same architecture)",
+    "student_sha256": null,
+    "train_meta": {
+      "dataset": "fancyzhx/ag_news",
+      "split": "train",
+      "requested": 4000,
+      "used": 4000,
+      "class_counts": {
+        "0": 998,
+        "1": 797,
+        "2": 988,
+        "3": 1217
+      }
+    },
+    "test_meta": {
+      "dataset": "fancyzhx/ag_news",
+      "split": "test",
+      "requested": 1000,
+      "used": 1000,
+      "class_counts": {
+        "0": 268,
+        "1": 274,
+        "2": 205,
+        "3": 253
+      }
+    },
+    "feature_shape": [
+      4000,
+      256
+    ],
+    "accuracy": 0.632,
+    "macro_f1": 0.6280428897446606,
+    "majority_baseline": 0.274,
+    "train_samples": 4000,
+    "test_samples": 1000,
+    "num_classes": 4
+  },
+  "not_run": [
+    "second seed",
+    "hyperparameter search on the probe (deliberately fixed at C=1.0, max_iter=1000)",
+    "larger probe splits"
+  ],
+  "interpretation_caveat": "Bounded pilot students (700k tokens). Every trained student remains below the random-initialised reference on this probe."
+}

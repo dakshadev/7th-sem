@@ -168,7 +168,7 @@ def run_pilot(args: argparse.Namespace) -> dict[str, Any]:
     summary = {
         "schema_version": 1,
         "status": "completed" if trainer.counters.updates > initial_updates else "no_updates",
-        "variant": config.objective.variant,
+        "variant": config.objective.label,
         "config_path": str(config_path),
         "device": str(trainer.device),
         "bounded_by": {

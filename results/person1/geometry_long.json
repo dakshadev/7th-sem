@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "commit": "ee8676b",
+  "split": "wikitext-2-raw-v1 validation, 300 records, batch 32, frozen student, uncorrupted inputs",
+  "students": {
+    "s17-latent_a": {
+      "effective_rank_singular": 76.43161103115558,
+      "effective_rank_covariance": 3.621870230603235,
+      "status": "healthy",
+      "is_degenerate": false
+    },
+    "s17-latent_b": {
+      "effective_rank_singular": 67.57894448144586,
+      "effective_rank_covariance": 2.86509439062846,
+      "status": "healthy",
+      "is_degenerate": false
+    },
+    "s17-mlm": {
+      "effective_rank_singular": 10.225097481536682,
+      "effective_rank_covariance": 1.086358913683708,
+      "status": "healthy",
+      "is_degenerate": false
+    },
+    "s43-latent_a": {
+      "effective_rank_singular": 80.82079955363353,
+      "effective_rank_covariance": 5.145608746409283,
+      "status": "healthy",
+      "is_degenerate": false
+    },
+    "s43-latent_b": {
+      "effective_rank_singular": 72.62566075430712,
+      "effective_rank_covariance": 3.5741066026674164,
+      "status": "healthy",
+      "is_degenerate": false
+    },
+    "s43-mlm": {
+      "effective_rank_singular": 16.95257245383642,
+      "effective_rank_covariance": 1.4688109318191855,
+      "status": "healthy",
+      "is_degenerate": false
+    }
+  }
+}

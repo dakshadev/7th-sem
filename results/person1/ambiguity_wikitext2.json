@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "objective": "O1 \u2014 corpus profile and masked-word ambiguity",
+  "note": "Pretrained BERT (google-bert/bert-base-uncased) is used ONLY as an ambiguity estimator; its weights are never used by the project encoder. Entropy is in nats per position with all other real tokens visible (single-position masking).",
+  "runtime": {
+    "device": "cuda",
+    "torch": "2.11.0+cu128",
+    "cuda_available": true,
+    "gpu": "Tesla T4",
+    "estimator_model": "google-bert/bert-base-uncased",
+    "estimator_revision": "google-bert/bert-base-uncased"
+  },
+  "data": {
+    "dataset": "Salesforce/wikitext",
+    "config": "wikitext-2-raw-v1",
+    "split": "train",
+    "requested": 400,
+    "used": 400
+  },
+  "settings": {
+    "max_length": 128,
+    "mask_ratio": 0.15,
+    "span_length": 3,
+    "seed": 17,
+    "max_positions_per_record": 100
+  },
+  "corpus": {
+    "records_used": 400,
+    "eligible_tokens": 26840,
+    "unique_tokens": 5133,
+    "mean_tokens_per_record": 67.1
+  },
+  "ambiguity": {
+    "mean_entropy_nats": 1.2774417400360107,
+    "median_entropy_nats": 0.6018899083137512,
+    "p90_entropy_nats": 3.7395615577697754,
+    "frac_positions_entropy_gt_log5": 0.30216095380029806,
+    "frac_positions_entropy_lt_1nat": 0.600558867362146,
+    "entropy_by_frequency": {
+      "rare(1-2)": {
+        "positions": 4527,
+        "mean_entropy": 1.5231745143848465
+      },
+      "mid(3-20)": {
+        "positions": 8264,
+        "mean_entropy": 1.4325532027015564
+      },
+      "frequent(>20)": {
+        "positions": 14049,
+        "mean_entropy": 1.1070186844833316
+      }
+    }
+  },
+  "policy_comparison": {
+    "independent_mean_entropy": 1.611502089855494,
+    "span_mean_entropy": 1.6325593552351985,
+    "paired_records": 400,
+    "mean_difference_span_minus_independent": 0.021057265379704405,
+    "records_span_more_ambiguous": 191,
+    "records_independent_more_ambiguous": 202
+  },
+  "limitations": [
+    "Ambiguity comes from one pretrained model's distribution, not the project encoder.",
+    "WikiText-2 pilot subset, not the WikiText-103 target corpus.",
+    "Single-position masking approximates, but does not reproduce, joint span masking."
+  ],
+  "commit": "ee8676b"
+}

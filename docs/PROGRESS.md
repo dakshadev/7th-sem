@@ -102,3 +102,18 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - `src/data.py`: eligibility now intersects `tokenizer.all_special_ids`; regression test fails without the fix and passes with it (22/22 Person 2 tests pass).
 - `notebooks/run_colab.ipynb`: installs dependencies by name instead of `requirements.txt` (which had replaced CUDA torch with `2.11.0+cpu`), asserts `torch.cuda.is_available()` with the accelerator-confirmation hint, pins `PINNED_COMMIT = 00b8dc8`, and the "runtime restart" cell is relabelled as a same-session reload with the real restart requirement documented.
 - `requirements.txt`: warns that cloud runtimes must not install torch from it.
+
+## Scaled pilot, ablations, probe and Objective 1 — Kaggle T4 — 27 October 2026
+
+- Date / author / branch / commit: 2026-10-27 / Person 1 / `integration/person1-person2` / `ee8676b`
+- Runtime: Kaggle Tesla T4 15360 MiB, torch 2.11.0+cu128, `cuda.is_available() == True`. Total GPU time for the batch ~7 minutes.
+- Budget per run: 700,482 non-padding tokens, 1,230 updates, 102,721 masked targets (12,000 WikiText-2 records). Stop reason `budget`.
+- Anchors, two seeds: MLM 10.526→7.784 (s17) and 10.444→7.945 (s43); latent A 2.014→0.505 / 2.018→0.519; latent B 0.563→0.150 / 0.576→0.154.
+- Ablations D–G (seed 17, one change from A): D 0.358, E 0.513, F 0.902, G 0.239 final loss (objective-specific scale; not comparable to A's 0.505).
+- Geometry (validation, 300 records, frozen): MLM rank(singular) 10.23/16.95; A 76.43/80.82; B 67.58/72.63; all `healthy`, none degenerate.
+- AG News probe (4,000 train / 1,000 held-out): MLM 0.575/0.577, A 0.589/0.588, B 0.593/0.585 accuracy; **random-init reference 0.632**; majority 0.274. Every trained student remains below the random reference.
+- Objective 1 ambiguity (400 records, 26,840 positions, single-position masking): mean 1.277 nats, median 0.602, 30.2% of positions above log 5; rare tokens 1.523 nats vs frequent 1.107. Independent 1.612 vs span 1.633 nats, 191/400 records span-more-ambiguous — the earlier 12-record gap does not reproduce.
+- Evidence: `docs/PERSON1_LONG_PILOT.md`, `results/person1/{kaggle_long_runs,probe_agnews_long,geometry_long,ambiguity_wikitext2}.json`.
+- Known limitations: 14% of the proposed budget; two seeds; D–G single-seed; probe task easy for random features.
+- Fixed in passing: `run_pilot` recorded the deprecated `objective.variant` (always empty) instead of `label`; corrected after these runs, so artifact label fields are empty and labels are derived from config paths.
+- Next action / owner: Person 1 — full 5M-token budget, then D–G with probes at that budget.

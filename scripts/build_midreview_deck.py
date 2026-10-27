@@ -341,12 +341,12 @@ def build() -> Path:
         for run in long_runs["long"]:
             rows.append(
                 [
-                    run["run"],
-                    fmt(run["tokens"]),
-                    fmt(run["targets"]),
+                    f"{run['run']} (seed {run.get('seed')})",
+                    f"{run['nonpadding_tokens']:,}",
+                    f"{run['masked_targets']:,}",
                     fmt(run["first_loss"]),
                     fmt(run["last_loss"]),
-                    fmt(run["seconds"], 1) + " s",
+                    fmt(run["training_wall_clock_seconds"], 1) + " s",
                 ]
             )
         table(slide, ["Run", "Tokens", "Targets", "First loss", "Last loss", "Time"], rows)
@@ -424,9 +424,9 @@ def build() -> Path:
             [
                 r["run"],
                 r["label"],
-                fmt(r["tokens"]),
+                f"{r['nonpadding_tokens']:,}",
                 fmt(r["last_loss"]),
-                fmt(r["seconds"], 1) + " s",
+                fmt(r["training_wall_clock_seconds"], 1) + " s",
             ]
             for r in long_runs["ablations"]
         ]
