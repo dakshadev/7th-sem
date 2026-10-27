@@ -1,6 +1,8 @@
-# Shared interfaces — proposed v1
+# Shared interfaces
 
-Both owners should confirm this contract before coding. Breaking changes require a coordinated update to both implementations and this document. Shapes below describe the intended interface, not existing classes.
+This contract is implemented in both branches: `src/data.py` produces it, `src/train.py`
+consumes it and `src/evaluate.py` evaluates against it. Breaking changes require a coordinated
+update to both implementations and this document.
 
 ## Batch contract
 

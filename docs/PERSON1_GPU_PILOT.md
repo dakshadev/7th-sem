@@ -50,18 +50,20 @@ ranked against each other. `stop_reason` is `interrupted` for all three: that is
 | B — latent | 86.88 | 5.45 | healthy |
 
 No variant collapsed at this scale, and none is "better" on this evidence: 50 updates on 23k
-tokens cannot separate design choices. **Not run:** AG News linear probe, token-level geometry,
-GPU throughput/memory benchmark, second seed.
+tokens cannot separate design choices. **Not run here:** token-level geometry, GPU
+throughput/memory benchmark. Both the AG News linear probe and a second seed were run after
+this pilot and are recorded in `docs/PERSON1_PROBE.md` and `docs/PERSON1_LONG_PILOT.md`.
 
 ## Test suite in the cloud runtime
 
-`python -m pytest -q` → **53 passed, 1 skipped**. Locally (CPU) the same suite reports 52
-passed / 2 skipped; the CUDA-only resume test executes on the GPU runtime.
+`python -m pytest -q` → **55 passed, 2 skipped** on the current tree. One skip is the CUDA-only
+resume test, the other an integration-only test. The count observed at commit `fbc93db` is
+recorded in `docs/PROGRESS.md`; the suite has grown since then.
 
 ## Reproduce
 
 ```bash
-git clone -b integration/person1-person2 https://github.com/dakshadev/7th-sem.git
+git clone https://github.com/dakshadev/7th-sem.git
 cd 7th-sem
 pip install "transformers>=4.40" "datasets>=2.18" "scikit-learn>=1.4" "scipy>=1.12" \
   "numpy>=1.26" "matplotlib>=3.8"   # never requirements.txt: it downgrades CUDA torch

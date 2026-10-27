@@ -2,9 +2,9 @@
 
 ## Status and environment
 
-This branch contains the Person 1 implementation and deterministic CPU test suite for the encoder, C/A/B objectives, fp32 runner, checkpointing, student export, the batch/pilot orchestration scripts, and the evaluation bridge. It is runtime-verified in the CPU environment: PyTorch `2.9.1+cpu`, pytest `9.1.1` and ruff `0.14.14`; 31 tests passed and the CUDA-only resume test skipped because CUDA is unavailable. This does not establish a GPU, real-dataset, geometry or transfer result. `docs/DEVELOPMENT_EVIDENCE.md` records the commands and output.
+This branch contains the Person 1 implementation and deterministic test suite for the encoder, C/A/B objectives, fp32 runner, checkpointing, student export, the batch/pilot orchestration scripts, and the evaluation bridge. It is runtime-verified in the CPU environment: PyTorch `2.9.1+cpu`, pytest `9.1.1` and ruff `0.14.14`; **55 tests passed, 2 skipped** (one CUDA-only resume test, one integration-only test). The same suite has run on Kaggle T4 in a CUDA build. `docs/PROGRESS.md` records the commands and output.
 
-The selected interpreter is `C:\Users\daksh\AppData\Local\Programs\Python\Python312\python.exe`; `.venv` was created from it using `uv 0.12.9`. `nvidia-smi` reported an NVIDIA GeForce RTX 4070 Laptop GPU (8188 MiB, driver 610.60), but CUDA Torch availability is unverified because the official wheel could not be downloaded. The project intentionally has no pinned lockfile yet: dependency resolution could not complete, and inventing a resolved version would be misleading.
+The selected interpreter is `C:\Users\daksh\AppData\Local\Programs\Python\Python312\python.exe`; `.venv` was created from it using `uv 0.12.9`. The project intentionally has no pinned lockfile yet: dependency resolution could not complete locally, and inventing a resolved version would be misleading. CUDA verified in the cloud runtime (torch 2.11.0+cu128); the local host is CPU-only by policy.
 
 The tested local CPU commands are:
 
@@ -73,20 +73,15 @@ listed under `not_run`.
 checkpoint, freezes the student in evaluation mode, embeds uncorrupted held-out sequences
 under `torch.no_grad()`, and calls Person 2's `masked_mean_pooling` and
 `compute_representation_geometry`. Export paths use `src.train.load_exported_student`.
-Unavailable metrics (linear probe, token geometry, GPU benchmark, optional pretrained-BERT
-analysis) are reported as `not_run`. **Cross-branch fix required:** Person 2's current
-`load_student_checkpoint` selects only `student_encoder`/`model`/`encoder`, so it does not
-recognise Person 1's `"student"` key. The bridge reads both and can emit a
-`student_encoder` wrapper, but Person 2 must add the key (or wrapper) with a schema check on
-their branch. Their file was not edited here.
+Unavailable metrics (token geometry, GPU throughput benchmark, optional pretrained-BERT
+analysis) are reported as `not_run`. The cross-branch checkpoint defect is resolved:
+`src/evaluate.py` accepts `student`, `student_encoder`, `model` and `encoder`.
 
-Local verification used a temporary merged harness outside the repository (Person 1 `src/`
-plus Person 2's committed `src/data.py` and `src/evaluate.py`) because those modules are not
-merged into `person1`. With a 4-text offline fixture, two updates per variant emitted valid
-manifests and measured diagnostics for MLM, A and B; frozen geometry on the MLM export
-returned `status: "healthy"` with finite metrics. This is a CPU pipeline check only. No
-real WikiText subset, CUDA run, probe or durable cloud artifact exists. See
-`docs/COLAB_RUNBOOK.md` for the pending cloud procedure.
+Verification then went past the CPU pipeline check. The measured runs are in `results/person1/`
+and `docs/PERSON1_LONG_PILOT.md`: a 700,482-token pilot on 12,000 WikiText-2 records with two
+seeds, the D-G ablations, frozen geometry, the AG News probe, the Objective 1 ambiguity
+analysis and a 12-run budget sweep. The headline result is negative, and it is reported as
+such.
 
 ## Commands after dependencies resolve
 
@@ -98,4 +93,7 @@ real WikiText subset, CUDA run, probe or durable cloud artifact exists. See
 .\.venv\Scripts\python.exe -m src.train --config configs\latent_b.json --batches results\synthetic.pt --output results\latent-b-smoke
 ```
 
-Those are implementation diagnostics only. Real-data and GPU pilots remain pending Person 2's manifested dictionary batches and a working Torch installation. There is no AG News evaluation claim here.
+Those are implementation diagnostics only. The real-data and GPU pilots that followed are
+recorded in `results/person1/` and `docs/PERSON1_LONG_PILOT.md`; see `docs/COLAB_RUNBOOK.md`
+for the procedure that produced them. The AG News probe result is a measured negative, not a
+claim that any latent condition transfers better than MLM.

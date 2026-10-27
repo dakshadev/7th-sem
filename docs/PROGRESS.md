@@ -2,6 +2,12 @@
 
 ## Bootstrap — 27 October 2026
 
+> **Reading this log:** entries are dated and kept as written. A test count or status line
+> inside an entry describes that date, not the current tree (the suite is now 55 passed,
+> 2 skipped; GPU runs exist). For the current state read README.md.
+> `docs/DEVELOPMENT_EVIDENCE.md` and `docs/PERSON1_FINAL_SUMMARY.md` were deleted on
+> 27 Oct 2026; entries below that cite them describe the state at the time.
+
 Scope: documentation only. The initial repository was empty. No executable model, data pipeline, training, tests, GPU experiment, dependency environment or results exist at this stage. The bootstrap commit establishes shared context and intended interfaces. Branch publishing must be verified separately by the initiating assistant.
 
 ### Person 1 next
@@ -41,7 +47,7 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 ## Person 1 implementation attempt — 27 October 2026
 
 - Date / author / branch / commit: 27 October 2026 / Daksh (Person 1) / `person1` / working tree, no commit created.
-- Implemented files: `pyproject.toml`; `configs/`; `src/config.py`, `src/model.py`, `src/objectives.py`, `src/train.py`, `src/synthetic.py`; deterministic tests in `tests/`; `docs/PERSON1_IMPLEMENTATION.md` and `docs/DEVELOPMENT_EVIDENCE.md`.
+- Implemented files: `pyproject.toml`; `configs/`; `src/config.py`, `src/model.py`, `src/objectives.py`, `src/train.py`, `src/synthetic.py`; deterministic tests in `tests/`; `docs/PERSON1_IMPLEMENTATION.md` and `docs/DEVELOPMENT_EVIDENCE.md` (that second file was deleted on 27 Oct 2026; this log supersedes it).
 
 ### CPU verification follow-up
 
@@ -54,7 +60,7 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Exact command and environment: Python 3.12.10 venv created through `uv 0.12.9` with workspace-local `UV_CACHE_DIR`; see the evidence log for exact commands and complete observed outcomes. `compileall`, config import and config JSON checks passed. `git diff --check` passed.
 - Actual test/integration outcome: Required Torch/pytest/ruff commands could not run. Network connections to `download.pytorch.org` and `pypi.org` were refused, leaving the venv without dependencies. No model forward, training step, checkpoint, export, full-size smoke or GPU smoke is claimed.
 - Experiment ID, config and tokens (if any): None. No synthetic or real-data optimization was executed.
-- Durable logs/checkpoint/plot locations: No runtime artifacts. The source evidence log is `docs/DEVELOPMENT_EVIDENCE.md`.
+- Durable logs/checkpoint/plot locations: No runtime artifacts. The source evidence log at the time was `docs/DEVELOPMENT_EVIDENCE.md`, since deleted in favour of this log and `results/person1/`.
 - Known failures or limitations: Dependency resolution is blocked; no pinned resolved dependency set exists. CUDA Torch availability is unverified despite host `nvidia-smi` reporting an RTX 4070 Laptop GPU (8188 MiB, driver 610.60). Person 2 data batches, data manifest, real-data integration and evaluation are pending.
 - Interface changes agreed with other owner: None; the documented batch contract is preserved.
 - Next action / owner: Person 1 — restore access to an official PyTorch wheel and PyPI/approved package mirror; run the recorded test/lint/synthetic/checkpoint/export commands. Person 2 — provide a manifested contract-compliant dictionary batch; no production data loader was added here.

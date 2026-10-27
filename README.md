@@ -103,6 +103,12 @@ the probe consumes *clean* input, and longer training makes the encoder better a
 task and less useful as a general text encoder at this scale. That is a hypothesis, not a
 finding — the next experiment probes the same checkpoints on masked input to test it.
 
+An independent audit re-derived every number above from the raw JSON and cross-checked it; the
+verified points and the six legitimate ways to misread these files are in
+[docs/DATA_INTEGRITY.md](docs/DATA_INTEGRITY.md). Two of them matter when quoting results:
+differences below 0.002 accuracy are probe noise (the budget effect is 20–30× that), and
+WikiText-2 is a prefix of WikiText-103, so the 0.69M tier is the same data under either label.
+
 An earlier pass of this sweep (`results/person1/sweep_pass1_no_annealing.json`) compared both
 budgets with `max_updates=40000`, so neither run's learning-rate schedule reached zero. That
 confounded budget with schedule; it is kept for the record and must not be cited as the budget
@@ -204,6 +210,7 @@ One shared encoder and one runner; never two incompatible models. Changes to sha
 - [docs/PROGRESS.md](docs/PROGRESS.md) — chronological, measured evidence log.
 - [docs/PERSON1_LONG_PILOT.md](docs/PERSON1_LONG_PILOT.md) — scaled pilot, ablations, probe, ambiguity.
 - [docs/PERSON2_REVIEW.md](docs/PERSON2_REVIEW.md) — review of the data/evaluation modules.
+- [docs/DATA_INTEGRITY.md](docs/DATA_INTEGRITY.md) — independent audit of every reported number, plus the six ways these files can be misread.
 - [docs/COLAB_RUNBOOK.md](docs/COLAB_RUNBOOK.md) — GPU runbook (Kaggle).
 - [docs/mid-project-review.pptx](docs/mid-project-review.pptx) — mid-project deck, generated from results.
 
