@@ -26,9 +26,20 @@ negative ones) rather than only the best cell of the table.
 | **A** | masked latent | final teacher layer | attention | MSE | span |
 | **B** | masked latent | mean of top-2 normalized teacher layers | linear | Smooth L1 | independent |
 | **D–G** | one-at-a-time variants of A | top-2 target (D), span→independent (E), linear predictor (F), Smooth L1 (G) | | | |
+| **H** | A + VICReg auxiliary | variance hinge on per-dimension std (0.1) and off-diagonal covariance (0.04) | | | |
+| **I** | A + Barlow auxiliary | off-diagonal correlation penalty, weight 0.01 | | | |
+| **J** | A, no teacher | targets from the student's own detached forward pass | | | |
 
 The teacher is a frozen EMA copy of the encoder (decay 0.996) whose targets are detached; EMA is
-applied after the optimizer step, so the teacher never receives gradients.
+applied after the optimizer step, so the teacher never receives gradients. `teacher.mode: "self"`
+removes the teacher network entirely (condition J), so "no EMA" means no second copy of the model
+rather than a decay of 1.
+
+**H and I are anti-collapse auxiliaries, not reproductions.** VICReg and Barlow Twins are two-view
+methods whose statistics terms pair with an invariance term. Here the masked-latent loss supplies
+invariance and only the statistics are added, which isolates the guard with everything else fixed.
+The Barlow weight is 0.01 rather than 0.1 because its raw term measures ~0.58 at initialisation
+against VICReg's ~0.08; equal nominal weights would let it contribute about seven times more.
 
 ## What is built
 
@@ -40,7 +51,7 @@ applied after the optimizer step, so the teacher never receives gradients.
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **55 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **64 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 ## Results so far (all bounded pilots)
@@ -97,6 +108,32 @@ Majority-class baseline: 0.274.
 2. **More pretraining makes transfer worse, not better.** A 7× larger budget costs every
    condition 0.04–0.05 accuracy, while the training losses improve over the same range
    (MLM 7.22 → 7.25, latent B 0.146 → 0.088).
+
+**Does a collapse guard, or removing the teacher, fix it? No** (`results/person1/sweep_anticollapse.json`,
+same probe, same seeds, same batch artifacts as the sweep above):
+
+| Condition | Accuracy 0.69M | Accuracy 5M | Eff. rank (singular) 0.69M | 5M |
+|---|---|---|---|---|
+| A — latent + EMA (baseline) | 0.589 | 0.549 | 76.4 | not recovered |
+| H — + VICReg auxiliary | 0.593 | 0.567 | 102.0 | 90.0 |
+| I — + Barlow auxiliary | 0.597 | 0.567 | 113.8 | 107.5 |
+| J — no EMA teacher | 0.597 | 0.573 | 71.2 | 48.6 |
+| Random init, never pretrained | **0.632** | **0.632** | — | — |
+
+A's 5M rank is missing because the annealed sweep's geometry output could not be downloaded from
+Kaggle; the earlier 700k geometry (`geometry_long.json`) is the only verified A measurement.
+Reporting the gap rather than guessing at it.
+
+Three things follow, and the third is the awkward one:
+
+1. The guards help a little at 5M (H and I gain 0.018 over A) but at 0.69M all four conditions are
+   within seed noise of each other.
+2. The guards raise effective rank sharply (A 76 → H 102 → I 114 at 0.69M) while accuracy does not
+   move with them, and J has the lowest rank of the four yet the best accuracy at 5M. "Not
+   collapsed" and "transfers well" are not the same property, so rank is not the mechanism.
+3. **Removing the EMA teacher is the most effective of the three changes** (J 0.573 vs A 0.549 at
+   5M). At this scale the teacher is not earning its place, which is a result against our own
+   original design rather than for it.
 
 The leading explanation is a train/evaluation mismatch: training consumes *masked* input,
 the probe consumes *clean* input, and longer training makes the encoder better at the masked
