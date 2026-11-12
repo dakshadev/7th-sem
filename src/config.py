@@ -103,7 +103,16 @@ class OptimizerConfig:
 
 @dataclass(frozen=True)
 class TeacherConfig:
+    """Teacher used for the latent targets.
+
+    mode='ema' keeps a separate exponentially moving average copy of the student, which is the
+    recipe in the proposal. mode='self' is the ablation that removes it: targets come from the
+    student's own forward pass, detached. That answers "is the EMA needed at all?" on the same
+    objective, data and budget.
+    """
+
     ema_decay: float = 0.996
+    mode: Literal["ema", "self"] = "ema"
     # Target construction lives in ObjectiveConfig.target so component-wise ablations (D-G) can
     # vary the target without also changing masking, predictor or loss. This flag is now only a
     # cross-check: 'layernorm' is legal solely with the top2_normalized target.
@@ -112,6 +121,8 @@ class TeacherConfig:
     def __post_init__(self) -> None:
         if self.target_norm not in {"none", "layernorm"}:
             raise ValueError("teacher normalization must be 'none' or 'layernorm'")
+        if self.mode not in {"ema", "self"}:
+            raise ValueError("teacher mode must be 'ema' or 'self'")
         if not 0 <= _finite_number(self.ema_decay, "ema_decay") < 1:
             raise ValueError("ema_decay must be in [0, 1)")
 
@@ -130,6 +141,57 @@ class MaskConfig:
         if not 0 < _finite_number(self.ratio, "mask ratio") < 1:
             raise ValueError("mask ratio must be in (0, 1)")
         _positive_int(self.span_length, "span_length")
+
+
+@dataclass(frozen=True)
+class RegulariserConfig:
+    """Optional anti-collapse term added to the latent objective.
+
+    This is the axis the mid-project review flagged as missing: the project measured collapse
+    (effective rank) but never tried to prevent it. Both options keep the objective, encoder,
+    data and budget fixed and add only a statistics term.
+
+    kind='vicreg' is VICReg's variance and covariance terms: hold per-dimension standard
+    deviation above a floor, and push off-diagonal covariance to zero.
+    kind='barlow' is Barlow Twins' redundancy reduction: normalise each dimension, then push
+    the off-diagonal of the correlation matrix to zero, with an optional on-diagonal term
+    pulling self-correlation toward one.
+
+    Neither is the full published method. VICReg and Barlow Twins are two-view objectives with
+    an invariance term between views; here the invariance term is supplied by the existing
+    masked-latent loss and only the statistics terms are added. That is the intended
+    comparison (collapse guard as an auxiliary) and is reported as such, not as a
+    reproduction of either paper.
+    """
+
+    kind: Literal["none", "vicreg", "barlow"] = "none"
+    weight: float = 0.0
+    variance_floor: float = 1.0
+    variance_weight: float = 1.0
+    covariance_weight: float = 0.04
+    diagonal_weight: float = 0.005
+    eps: float = 1e-4
+
+    def __post_init__(self) -> None:
+        if self.kind not in {"none", "vicreg", "barlow"}:
+            raise ValueError("regulariser kind must be 'none', 'vicreg' or 'barlow'")
+        weight = _finite_number(self.weight, "regulariser weight")
+        if weight < 0:
+            raise ValueError("regulariser weight must be nonnegative")
+        if self.kind != "none" and weight <= 0:
+            raise ValueError(f"regulariser {self.kind!r} needs a positive weight")
+        if self.kind == "none" and weight != 0:
+            raise ValueError("regulariser weight must be 0 when kind is 'none'")
+        if _finite_number(self.variance_floor, "variance_floor") <= 0:
+            raise ValueError("variance_floor must be positive")
+        for name, value in (
+            ("variance_weight", self.variance_weight),
+            ("covariance_weight", self.covariance_weight),
+            ("diagonal_weight", self.diagonal_weight),
+            ("eps", self.eps),
+        ):
+            if _finite_number(value, name) < 0 or (name == "eps" and value == 0):
+                raise ValueError(f"{name} must be positive")
 
 
 @dataclass(frozen=True)
@@ -243,6 +305,7 @@ class ExperimentConfig:
     teacher: TeacherConfig = field(default_factory=TeacherConfig)
     mask: MaskConfig = field(default_factory=MaskConfig)
     objective: ObjectiveConfig = field(default_factory=ObjectiveConfig)
+    regulariser: RegulariserConfig = field(default_factory=RegulariserConfig)
     run: RunConfig = field(default_factory=RunConfig)
     schema_version: int = 1
 
@@ -284,6 +347,7 @@ class ExperimentConfig:
             "teacher",
             "mask",
             "objective",
+            "regulariser",
             "run",
             "schema_version",
             "_note",  # free-form documentation carried in the config file; ignored
@@ -295,6 +359,9 @@ class ExperimentConfig:
         optimizer = _allowed_mapping(value.get("optimizer", {}), OptimizerConfig, "optimizer")
         teacher = _allowed_mapping(value.get("teacher", {}), TeacherConfig, "teacher")
         mask = _allowed_mapping(value.get("mask", {}), MaskConfig, "mask")
+        regulariser = _allowed_mapping(
+            value.get("regulariser", {}), RegulariserConfig, "regulariser"
+        )
         objective = dict(value.get("objective", {}))
         if not isinstance(objective, dict):
             raise ValueError("objective must be an object")
@@ -317,6 +384,7 @@ class ExperimentConfig:
             teacher=TeacherConfig(**teacher),
             mask=MaskConfig(**mask),
             objective=ObjectiveConfig(**objective),
+            regulariser=RegulariserConfig(**regulariser),
             run=RunConfig(**run),
             schema_version=value.get("schema_version", 1),
         )

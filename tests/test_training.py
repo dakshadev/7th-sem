@@ -274,3 +274,64 @@ def test_cuda_checkpoint_resume_is_portable(tmp_path: Path) -> None:
     resumed.load_checkpoint(checkpoint)
     result = resumed.step(batch())
     assert result.updated and resumed.teacher is not None and not resumed.teacher.training
+
+
+def latent_ablation_config(
+    *, teacher_mode: str = "self", kind: str = "none", weight: float = 0.0
+) -> ExperimentConfig:
+    """The latent recipe with the teacher ablation and regulariser axes made explicit."""
+    from dataclasses import replace
+
+    from src.config import RegulariserConfig
+
+    base = config("latent_a")
+    return replace(
+        base,
+        teacher=replace(base.teacher, mode=teacher_mode),  # type: ignore[arg-type]
+        regulariser=RegulariserConfig(kind=kind, weight=weight),  # type: ignore[arg-type]
+    )
+
+
+def test_self_teacher_needs_no_teacher_network() -> None:
+    trainer = Trainer(latent_ablation_config(teacher_mode="self"))
+    assert trainer.teacher is None
+    result = trainer.step(batch())
+    assert result.updated and result.loss is not None
+    assert torch.isfinite(torch.tensor(result.loss))
+    assert result.regulariser is None
+    # Targets came from the student's own detached pass, so no teacher state is checkpointed.
+    assert trainer.checkpoint_state()["teacher"] is None
+
+
+def test_regulariser_changes_the_loss() -> None:
+    plain = Trainer(latent_ablation_config(teacher_mode="self", kind="none"))
+    guarded = Trainer(latent_ablation_config(teacher_mode="self", kind="vicreg", weight=0.1))
+    baseline = plain.step(batch())
+    regularised = guarded.step(batch())
+    assert baseline.loss is not None and regularised.loss is not None
+    assert baseline.regulariser is None
+    assert regularised.regulariser is not None
+    assert torch.isfinite(torch.tensor(regularised.regulariser))
+    assert regularised.regulariser >= 0
+    assert regularised.loss > baseline.loss
+    # Both trainers share the seed and the batch, so the base objective is identical and the
+    # difference is exactly the weighted statistics term.
+    torch.testing.assert_close(
+        torch.tensor(regularised.loss - baseline.loss),
+        torch.tensor(0.1 * regularised.regulariser),
+        rtol=1e-4,
+        atol=1e-6,
+    )
+
+
+def test_ema_teacher_still_updates() -> None:
+    trainer = Trainer(config("latent_a"))
+    assert trainer.teacher is not None
+    before = [item.detach().clone() for item in trainer.teacher.parameters()]
+    result = trainer.step(batch())
+    assert result.updated
+    after = list(trainer.teacher.parameters())
+    assert any(
+        not torch.equal(old, new) for old, new in zip(before, after, strict=True)
+    ), "EMA teacher did not move away from its initial student copy"
+    assert all(torch.isfinite(new).all() for new in after)

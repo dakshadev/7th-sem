@@ -1,0 +1,26 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "attention",
+    "loss": "mse",
+    "label": "J",
+    "predictor_dropout": 0.1
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "mode": "self",
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Recipe A anchor with the EMA teacher removed (teacher.mode=self): targets come from the student's own forward pass, detached, with no regulariser block. This tests whether the EMA is needed at all, holding objective, masking, data and budget fixed."
+}

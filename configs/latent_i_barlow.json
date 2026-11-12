@@ -1,0 +1,29 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "attention",
+    "loss": "mse",
+    "label": "I",
+    "predictor_dropout": 0.1
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3
+  },
+  "regulariser": {
+    "kind": "barlow",
+    "weight": 0.01
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Recipe A anchor plus a Barlow Twins redundancy-reduction auxiliary (kind=barlow, weight 0.01) on a single view: normalise each dimension, then push the off-diagonal of the correlation matrix to zero. The weight is 0.01 rather than 0.1 because the Barlow term measures about 0.58 at initialisation against VICReg's 0.08, so at equal weight it would contribute roughly seven times more to the loss; 0.01 puts both guards at a comparable ~0.006-0.008, keeping the comparison about the kind of guard rather than its scale. Same caveat as H: only the statistics terms are used, because the masked-latent loss already supplies the invariance term, so this is not a reproduction of the two-view paper."
+}

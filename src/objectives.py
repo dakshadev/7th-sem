@@ -138,3 +138,71 @@ def latent_loss(
     else:
         raise ValueError(f"unknown latent loss {kind}")
     return LossResult(value, count)
+
+
+def vicreg_variance_term(embeddings: Tensor, floor: float = 1.0, eps: float = 1e-4) -> Tensor:
+    """Hinge on per-dimension standard deviation: punish dimensions below the floor.
+
+    Taken from VICReg (Bardes, Ponce & LeCun, 2022). Each column of ``embeddings`` is one
+    representation dimension across the samples in the batch.
+    """
+    if embeddings.dim() != 2:
+        raise ValueError("regulariser expects a [samples, width] matrix")
+    if embeddings.shape[0] < 2:
+        raise ValueError("regulariser needs at least two samples")
+    std = torch.sqrt(embeddings.var(dim=0, unbiased=False) + eps)
+    return functional.relu(floor - std).mean()
+
+
+def vicreg_covariance_term(embeddings: Tensor, eps: float = 1e-4) -> Tensor:
+    """Off-diagonal covariance, squared: punish two dimensions carrying the same signal."""
+    centred = embeddings - embeddings.mean(dim=0, keepdim=True)
+    covariance = centred.T @ centred / max(1, embeddings.shape[0] - 1)
+    off_diagonal = covariance - torch.diag_embed(torch.diagonal(covariance))
+    return off_diagonal.pow(2).sum() / embeddings.shape[1]
+
+
+def barlow_redundancy_term(
+    embeddings: Tensor, eps: float = 1e-4, diagonal_weight: float = 0.005
+) -> Tensor:
+    """Barlow Twins' redundancy reduction on a single view.
+
+    Normalise each dimension, form the correlation matrix, push the off-diagonal to zero and
+    (optionally) the diagonal toward one. Barlow Twins applies this to two views; here the
+    invariance half is the masked-latent loss, so only the statistics half applies.
+    """
+    if embeddings.dim() != 2:
+        raise ValueError("regulariser expects a [samples, width] matrix")
+    if embeddings.shape[0] < 2:
+        raise ValueError("regulariser needs at least two samples")
+    centred = embeddings - embeddings.mean(dim=0, keepdim=True)
+    std = torch.sqrt(centred.pow(2).mean(dim=0) + eps)
+    normalised = centred / std
+    correlation = normalised.T @ normalised / max(1, embeddings.shape[0] - 1)
+    on_diagonal = torch.diagonal(correlation)
+    off_diagonal = correlation - torch.diag_embed(on_diagonal)
+    return off_diagonal.pow(2).sum() / embeddings.shape[1] + diagonal_weight * (
+        1 - on_diagonal
+    ).pow(2).mean()
+
+
+def collapse_regulariser(
+    embeddings: Tensor,
+    kind: str,
+    *,
+    variance_floor: float = 1.0,
+    variance_weight: float = 1.0,
+    covariance_weight: float = 0.04,
+    diagonal_weight: float = 0.005,
+    eps: float = 1e-4,
+) -> Tensor | None:
+    """Dispatch to the configured anti-collapse term, or None when disabled."""
+    if kind == "none":
+        return None
+    if kind == "vicreg":
+        return variance_weight * vicreg_variance_term(
+            embeddings, floor=variance_floor, eps=eps
+        ) + covariance_weight * vicreg_covariance_term(embeddings, eps=eps)
+    if kind == "barlow":
+        return barlow_redundancy_term(embeddings, eps=eps, diagonal_weight=diagonal_weight)
+    raise ValueError(f"unknown regulariser {kind!r}")

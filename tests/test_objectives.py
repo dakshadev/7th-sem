@@ -46,3 +46,76 @@ def test_masked_latent_loss_has_finite_gradients() -> None:
     assert result.loss is not None
     result.loss.backward()
     assert torch.isfinite(values.grad).all()
+
+
+def test_vicreg_variance_term_reacts_to_collapse() -> None:
+    from src.objectives import vicreg_variance_term
+
+    generator = torch.Generator().manual_seed(0)
+    # Every dimension is constant across samples, so its per-column std is exactly zero.
+    collapsed = torch.randn(8, generator=generator).unsqueeze(0).repeat(64, 1)
+    assert collapsed.std(dim=0, unbiased=False).abs().max().item() == 0.0
+    # eps sits under the sqrt, so sqrt(0) is lifted to sqrt(eps) and the default eps lifts the
+    # floor term to 1 - 0.01. A tight floor check needs a tiny eps.
+    assert abs(float(vicreg_variance_term(collapsed)) - 1.0) < 1.1e-2
+    floor_term = vicreg_variance_term(collapsed, floor=1.0, eps=1e-8)
+    assert abs(float(floor_term) - 1.0) < 1e-3
+
+    # Exactly unit per-column std: nothing is below the floor, so the hinge is zero.
+    noise = torch.randn(4096, 8, generator=generator)
+    noise = noise / noise.std(dim=0, unbiased=False)
+    spread = vicreg_variance_term(noise, floor=1.0)
+    assert float(spread) < 1e-2
+
+
+def test_vicreg_covariance_term_is_zero_for_independent_columns() -> None:
+    from src.objectives import vicreg_covariance_term
+
+    generator = torch.Generator().manual_seed(0)
+    independent = torch.randn(2000, 8, generator=generator)
+    baseline = float(vicreg_covariance_term(independent))
+    assert baseline < 0.02
+    assert torch.isfinite(torch.tensor(baseline)) and baseline >= 0
+
+    duplicated = independent.clone()
+    duplicated[:, -1] = duplicated[:, 0]
+    redundant = float(vicreg_covariance_term(duplicated))
+    assert redundant > 10 * baseline
+    assert redundant > 0.1
+
+
+def test_barlow_off_diagonal_penalises_duplicated_dimensions() -> None:
+    from src.objectives import barlow_redundancy_term
+
+    generator = torch.Generator().manual_seed(0)
+    independent = torch.randn(2000, 8, generator=generator)
+    baseline = barlow_redundancy_term(independent)
+    # Eight perfect copies of one signal: every off-diagonal correlation is 1, so the term is
+    # 8 * 7 / 8 = 7 before the on-diagonal correction, which is already satisfied.
+    duplicated = barlow_redundancy_term(
+        torch.randn(2000, generator=generator).unsqueeze(1).repeat(1, 8)
+    )
+    for value in (baseline, duplicated):
+        assert value.dim() == 0 and torch.isfinite(value) and value >= 0
+    assert float(duplicated) > 100 * float(baseline)
+    assert abs(float(duplicated) - 7.0) < 1e-2
+
+
+def test_collapse_regulariser_dispatches_and_validates() -> None:
+    import pytest
+
+    from src.objectives import collapse_regulariser
+
+    embeddings = torch.randn(64, 8, generator=torch.Generator().manual_seed(0))
+    assert collapse_regulariser(embeddings, "none") is None
+    for kind in ("vicreg", "barlow"):
+        term = collapse_regulariser(embeddings, kind)
+        assert term is not None and term.dim() == 0
+        assert torch.isfinite(term) and term >= 0
+    with pytest.raises(ValueError, match="unknown regulariser"):
+        collapse_regulariser(embeddings, "bogus")
+    with pytest.raises(ValueError, match="matrix"):
+        collapse_regulariser(torch.randn(64), "vicreg")
+    for kind in ("vicreg", "barlow"):
+        with pytest.raises(ValueError, match="two samples"):
+            collapse_regulariser(torch.randn(1, 8), kind)

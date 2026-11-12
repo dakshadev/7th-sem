@@ -33,6 +33,9 @@ CONFIG_BY_VARIANT = {
     "ablation_e": "configs/ablation_e.json",
     "ablation_f": "configs/ablation_f.json",
     "ablation_g": "configs/ablation_g.json",
+    "latent_h_vicreg": "configs/latent_h_vicreg.json",
+    "latent_i_barlow": "configs/latent_i_barlow.json",
+    "latent_j_noema": "configs/latent_j_noema.json",
 }
 # CLI name -> the run label recorded in the config. Labels are what appear in results.
 VARIANT_LABEL = {
@@ -43,6 +46,9 @@ VARIANT_LABEL = {
     "ablation_e": "E",
     "ablation_f": "F",
     "ablation_g": "G",
+    "latent_h_vicreg": "H",
+    "latent_i_barlow": "I",
+    "latent_j_noema": "J",
 }
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
 

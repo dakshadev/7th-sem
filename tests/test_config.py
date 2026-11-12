@@ -156,3 +156,60 @@ def test_config_ignores_documentation_note() -> None:
     assert config.mask.policy == "span"
     with pytest.raises(ValueError, match="unknown config keys"):
         ExperimentConfig.from_dict({"unexpected": 1})
+
+
+def test_regulariser_config_validation() -> None:
+    import pytest
+
+    from src.config import ExperimentConfig, RegulariserConfig
+
+    assert RegulariserConfig().kind == "none" and RegulariserConfig().weight == 0.0
+    with pytest.raises(ValueError, match="positive weight"):
+        RegulariserConfig(kind="vicreg", weight=0.0)
+    with pytest.raises(ValueError, match="must be 0"):
+        RegulariserConfig(kind="none", weight=0.1)
+    with pytest.raises(ValueError, match="nonnegative"):
+        RegulariserConfig(kind="vicreg", weight=-0.1)
+    with pytest.raises(ValueError, match="variance_floor"):
+        RegulariserConfig(kind="vicreg", weight=0.1, variance_floor=0.0)
+    with pytest.raises(ValueError, match="covariance_weight"):
+        RegulariserConfig(kind="vicreg", weight=0.1, covariance_weight=-0.1)
+    with pytest.raises(ValueError, match="eps"):
+        RegulariserConfig(kind="vicreg", weight=0.1, eps=0.0)
+    with pytest.raises(ValueError, match="kind"):
+        RegulariserConfig(kind="other", weight=0.1)  # type: ignore[arg-type]
+
+    block = {
+        "kind": "vicreg",
+        "weight": 0.3,
+        "variance_floor": 0.5,
+        "variance_weight": 2.0,
+        "covariance_weight": 0.08,
+        "diagonal_weight": 0.01,
+        "eps": 1e-5,
+    }
+    settings = ExperimentConfig.from_dict({"regulariser": block}).regulariser
+    assert settings.kind == "vicreg"
+    assert settings.weight == 0.3
+    assert settings.variance_floor == 0.5
+    assert settings.variance_weight == 2.0
+    assert settings.covariance_weight == 0.08
+    assert settings.diagonal_weight == 0.01
+    assert settings.eps == 1e-5
+    # The block must survive a full round-trip, including through to_dict().
+    config = ExperimentConfig.from_dict({"regulariser": block})
+    assert ExperimentConfig.from_dict(config.to_dict()).regulariser == settings
+
+
+def test_teacher_mode_validation() -> None:
+    import pytest
+
+    from src.config import ExperimentConfig, TeacherConfig
+
+    assert TeacherConfig().mode == "ema"
+    assert TeacherConfig(mode="self").mode == "self"
+    assert ExperimentConfig.from_dict({"teacher": {"mode": "self"}}).teacher.mode == "self"
+    with pytest.raises(ValueError, match="teacher mode"):
+        TeacherConfig(mode="other")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="teacher mode"):
+        ExperimentConfig.from_dict({"teacher": {"mode": "student"}})

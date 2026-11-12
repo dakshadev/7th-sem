@@ -1,0 +1,29 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "attention",
+    "loss": "mse",
+    "label": "H",
+    "predictor_dropout": 0.1
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3
+  },
+  "regulariser": {
+    "kind": "vicreg",
+    "weight": 0.1
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Recipe A anchor plus a VICReg statistics auxiliary (kind=vicreg, weight 0.1): a variance term holding per-dimension spread above a floor and a covariance term pushing off-diagonal covariance to zero, as an anti-collapse guard. Only the statistics half of VICReg is used; the invariance term is supplied by the existing masked-latent loss, so this is not a reproduction of the paper."
+}

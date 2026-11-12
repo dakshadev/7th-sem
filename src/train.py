@@ -24,7 +24,9 @@ from .model import SmallEncoder
 from .objectives import (
     AttentionPredictor,
     LinearPredictor,
+    LossResult,
     MLMHead,
+    collapse_regulariser,
     final_target,
     latent_loss,
     normalized_top2_target,
@@ -51,6 +53,9 @@ class StepResult:
     targets: int
     updated: bool
     nonpadding_tokens: int
+    # Present only when an anti-collapse term is active, so the metrics log shows how much of
+    # the gradient came from the statistics term rather than the objective.
+    regulariser: float | None = None
 
 
 def set_seed(seed: int) -> None:
@@ -124,10 +129,12 @@ class Trainer:
             self.mlm_head = MLMHead(config.model.width, config.model.vocab_size).to(self.device)
             modules: list[nn.Module] = [self.student, self.mlm_head]
         else:
-            self.teacher = SmallEncoder(config.model).to(self.device)
-            self.teacher.load_state_dict(self.student.state_dict())
-            self.teacher.requires_grad_(False)
-            self.teacher.eval()
+            if config.teacher.mode == "ema":
+                teacher = SmallEncoder(config.model).to(self.device)
+                teacher.load_state_dict(self.student.state_dict())
+                teacher.requires_grad_(False)
+                teacher.eval()
+                self.teacher = teacher
             self.predictor = (
                 AttentionPredictor(config.model, config.objective.predictor_dropout)
                 if config.objective.predictor == "attention"
@@ -143,6 +150,7 @@ class Trainer:
         )
         self.scheduler = torch.optim.lr_scheduler.LambdaLR(self.optimizer, self._schedule_scale)
         self.counters = Counters()
+        self._last_regulariser: float | None = None
 
     def _schedule_scale(self, update: int) -> float:
         warmup, maximum = self.config.optimizer.warmup_updates, self.config.optimizer.max_updates
@@ -181,35 +189,77 @@ class Trainer:
             raise ValueError("prediction_mask cannot include special tokens")
         return local
 
+    def _latent_targets(self, batch: dict[str, Tensor], student_output) -> Tensor:
+        """Teacher targets for the latent objective.
+
+        In 'ema' mode a separate, slowly moving copy of the student supplies them. In 'self'
+        mode the student's own forward pass does, detached: that is the ablation which tests
+        whether the EMA teacher is doing any work.
+        """
+        want_hidden = self.config.objective.target == "top2_normalized"
+        if self.config.teacher.mode == "ema":
+            assert self.teacher is not None
+            self.teacher.eval()
+            with torch.no_grad():
+                source = self.teacher(
+                    batch["input_ids"], batch["attention_mask"], return_hidden_states=want_hidden
+                )
+        else:
+            with torch.no_grad():
+                source = self.student(
+                    batch["input_ids"], batch["attention_mask"], return_hidden_states=want_hidden
+                )
+        if self.config.objective.target == "final":
+            return final_target(source.last_hidden_state, batch["prediction_mask"])
+        return normalized_top2_target(source.hidden_states, batch["prediction_mask"])
+
     def _loss(self, batch: dict[str, Tensor]):
         student_output = self.student(batch["masked_input_ids"], batch["attention_mask"])
         if self.mlm_head is not None:
-            return selected_mlm_loss(
+            outcome = selected_mlm_loss(
                 self.mlm_head(student_output.last_hidden_state),
                 batch["input_ids"],
                 batch["prediction_mask"],
             )
-        assert self.teacher is not None and self.predictor is not None
-        self.teacher.eval()
-        with torch.no_grad():
-            teacher_output = self.teacher(
-                batch["input_ids"],
-                batch["attention_mask"],
-                return_hidden_states=self.config.objective.target == "top2_normalized",
+        else:
+            assert self.predictor is not None
+            targets = self._latent_targets(batch, student_output)
+            predictions = self.predictor(
+                student_output.last_hidden_state, batch["attention_mask"]
             )
-            targets = (
-                final_target(teacher_output.last_hidden_state, batch["prediction_mask"])
-                if self.config.objective.target == "final"
-                else normalized_top2_target(teacher_output.hidden_states, batch["prediction_mask"])
+            outcome = latent_loss(
+                predictions,
+                targets,
+                batch["prediction_mask"],
+                self.config.objective.loss,
+                self.config.objective.smooth_l1_beta,
             )
-        predictions = self.predictor(student_output.last_hidden_state, batch["attention_mask"])
-        return latent_loss(
-            predictions,
-            targets,
-            batch["prediction_mask"],
-            self.config.objective.loss,
-            self.config.objective.smooth_l1_beta,
+        return self._add_regulariser(outcome, student_output, batch)
+
+    def _add_regulariser(self, outcome: LossResult, student_output, batch: dict[str, Tensor]):
+        """Add the configured anti-collapse term over all non-padding positions.
+
+        Returns the same LossResult type the caller expects; the scalar value is stashed on the
+        trainer so ``step`` can put it in the metrics row without changing the objective API.
+        """
+        self._last_regulariser = None
+        settings = self.config.regulariser
+        if settings.kind == "none" or outcome.loss is None:
+            return outcome
+        embeddings = student_output.last_hidden_state[batch["attention_mask"]]
+        term = collapse_regulariser(
+            embeddings,
+            settings.kind,
+            variance_floor=settings.variance_floor,
+            variance_weight=settings.variance_weight,
+            covariance_weight=settings.covariance_weight,
+            diagonal_weight=settings.diagonal_weight,
+            eps=settings.eps,
         )
+        if term is None:
+            return outcome
+        self._last_regulariser = float(term.detach().item())
+        return LossResult(loss=outcome.loss + settings.weight * term, targets=outcome.targets)
 
     def step(self, batch: Batch, training: bool = True) -> StepResult:
         local = self._move_and_validate(batch)
@@ -228,7 +278,9 @@ class Trainer:
         if not torch.isfinite(outcome.loss):
             raise FloatingPointError("non-finite objective loss")
         if not training:
-            return StepResult(float(outcome.loss.item()), outcome.targets, False, tokens)
+            return StepResult(
+                float(outcome.loss.item()), outcome.targets, False, tokens, self._last_regulariser
+            )
         self.optimizer.zero_grad(set_to_none=True)
         outcome.loss.backward()
         parameters = [item for group in self.optimizer.param_groups for item in group["params"]]
@@ -245,7 +297,9 @@ class Trainer:
         self.counters.updates += 1
         self.counters.nonpadding_tokens += tokens
         self.counters.masked_targets += outcome.targets
-        return StepResult(float(outcome.loss.item()), outcome.targets, True, tokens)
+        return StepResult(
+            float(outcome.loss.item()), outcome.targets, True, tokens, self._last_regulariser
+        )
 
     def validate(self, batch: Batch) -> StepResult:
         """Validation cannot consume caller-visible random state or mutate counters."""
