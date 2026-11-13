@@ -54,6 +54,10 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Automated tests | **64 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
+**New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
+pages in plain language, covering the idea, the six conditions, how they are judged, what came out,
+and what is inside the presentation and the draft paper.
+
 ## Results so far (all bounded pilots)
 
 Everything below is measured, stored as JSON in `results/person1/`, and regenerated into the
@@ -211,12 +215,14 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 55 passed, 2 skipped
+python -m pytest -q                       # 64 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_probe.py --help        # frozen AG News probe
 python scripts/ambiguity_analysis.py --help
 python scripts/build_midreview_deck.py    # rebuild the deck from results/
+python scripts/build_synopsis.py          # rebuild the draft paper from results/
+python scripts/audit_documents.py         # re-verify references and every printed number
 ```
 
 Compute: **free GPU only** — a Kaggle T4 is sufficient (30 GPU-hours/week). Colab's free tier

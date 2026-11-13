@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>This project, explained</title>
+<style>
+  @page { size: A4; margin: 15mm 14mm 13mm 14mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: #1c1f23; background: #fff;
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.4pt; line-height: 1.5; -webkit-font-smoothing: antialiased;
+  }
+  .sheet { page-break-after: always; padding-bottom: 4mm; }
+  .sheet:last-child { page-break-after: auto; }
+  h1 { font-size: 22pt; line-height: 1.15; margin: 0 0 6mm; letter-spacing: -0.4px; }
+  h2 { font-size: 15pt; margin: 0 0 3mm; letter-spacing: -0.2px; }
+  h2 .num { color: #b4553f; font-weight: 700; margin-right: 3mm; }
+  h3 { font-size: 11pt; margin: 5mm 0 1.6mm; }
+  p { margin: 0 0 3mm; }
+  .lead { font-size: 11.4pt; color: #3b424b; }
+  .muted { color: #626b77; }
+  .small { font-size: 9pt; line-height: 1.45; }
+  .rule { height: 3px; background: #1c1f23; width: 26mm; margin: 0 0 5mm; }
+  .panel { background: #f6f7f9; border-left: 3px solid #2f5d8a; padding: 3.4mm 4mm; margin: 4mm 0; }
+  .panel.warn { border-left-color: #b4553f; }
+  .panel b { color: #1c1f23; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; }
+  .card { border: 1px solid #e2e5ea; border-radius: 3px; padding: 3.2mm 3.4mm; }
+  .card h4 { margin: 0 0 1.5mm; font-size: 10.2pt; }
+  .card p { margin: 0; font-size: 9.4pt; color: #454d57; }
+  .tag { display: inline-block; font-size: 8pt; letter-spacing: 0.4px; text-transform: uppercase;
+         color: #2f5d8a; border: 1px solid #c9d6e2; border-radius: 2px; padding: 0.6mm 1.8mm;
+         margin-bottom: 2mm; background: #f2f6fa; }
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 4mm; font-size: 9.4pt; }
+  th { text-align: left; border-bottom: 1.4px solid #1c1f23; padding: 1.8mm 2mm; font-weight: 700; }
+  td { border-bottom: 1px solid #e6e9ee; padding: 1.4mm 2mm; vertical-align: top; }
+  tr.hi td { background: #fbf6f4; }
+  figure { margin: 3mm 0; }
+  figcaption { font-size: 8.6pt; color: #626b77; margin-top: 1.6mm; }
+  svg { display: block; }
+  .cover { padding-top: 8mm; }
+  .cover .meta { margin-top: 12mm; font-size: 9.6pt; color: #4a525c; }
+  .cover .meta b { color: #1c1f23; }
+  .kicker { font-size: 9pt; letter-spacing: 1.6px; text-transform: uppercase; color: #b4553f;
+            font-weight: 700; margin-bottom: 3mm; }
+  .pill { display: inline-block; background: #1c1f23; color: #fff; font-size: 8.4pt;
+          padding: 1mm 2.6mm; border-radius: 10mm; margin-right: 2mm; }
+  ul { margin: 0 0 3mm 0; padding-left: 5mm; }
+  li { margin-bottom: 1.4mm; }
+  .footnote { position: running(f); }
+  .num-big { font-size: 19pt; font-weight: 700; letter-spacing: -0.5px; }
+  .num-sub { font-size: 8.6pt; color: #626b77; }
+  .chart-sm { width: 72%; margin: 0 auto; display: block; }
+</style>
+</head>
+<body>
+
+<!-- ============================================ 1 COVER -->
+<section class="sheet cover">
+  <div class="kicker">Interim project · plain-language brief</div>
+  <h1>What we are actually doing,<br>and what we found</h1>
+  <div class="rule"></div>
+  <p class="lead">A short guide to the project for the four of us — no background assumed. It explains
+  the idea, the six things we trained, how we judged them, what came out, and what is inside the
+  presentation and the draft paper.</p>
+
+  <figure>
+    <svg width="100%" height="150" viewBox="0 0 720 150" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 z" fill="#5b6470"/>
+        </marker>
+      </defs>
+      <rect x="2" y="42" width="118" height="58" rx="4" fill="#f2f6fa" stroke="#c9d6e2"/>
+      <text x="61" y="66" text-anchor="middle" font-size="11" fill="#1c1f23" font-weight="600">Text</text>
+      <text x="61" y="83" text-anchor="middle" font-size="9" fill="#5b6470">a paragraph</text>
+
+      <line x1="124" y1="71" x2="152" y2="71" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <rect x="156" y="42" width="120" height="58" rx="4" fill="#fff" stroke="#c9d6e2"/>
+      <text x="216" y="66" text-anchor="middle" font-size="11" fill="#1c1f23" font-weight="600">Tokens</text>
+      <text x="216" y="83" text-anchor="middle" font-size="9" fill="#5b6470">word pieces</text>
+
+      <line x1="280" y1="71" x2="308" y2="71" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <rect x="312" y="42" width="132" height="58" rx="4" fill="#fff" stroke="#c9d6e2"/>
+      <text x="378" y="66" text-anchor="middle" font-size="11" fill="#1c1f23" font-weight="600">Mask 15%</text>
+      <text x="378" y="83" text-anchor="middle" font-size="9" fill="#5b6470">hide some words</text>
+
+      <line x1="448" y1="71" x2="476" y2="71" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <rect x="480" y="42" width="120" height="58" rx="4" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="540" y="66" text-anchor="middle" font-size="11" fill="#1c1f23" font-weight="600">Encoder</text>
+      <text x="540" y="83" text-anchor="middle" font-size="9" fill="#5b6470">4 layers</text>
+
+      <line x1="604" y1="71" x2="632" y2="71" stroke="#5b6470" stroke-width="1.4" marker-end="url(#ar)"/>
+
+      <rect x="636" y="42" width="80" height="58" rx="4" fill="#fff" stroke="#c9d6e2"/>
+      <text x="676" y="66" text-anchor="middle" font-size="11" fill="#1c1f23" font-weight="600">A guess</text>
+      <text x="676" y="83" text-anchor="middle" font-size="9" fill="#5b6470">compared</text>
+    </svg>
+    <figcaption>The whole project lives in this line. What changes between our experiments is only
+    the last box: <em>what</em> the model is asked to guess.</figcaption>
+  </figure>
+
+  <div class="panel">
+    <b>The one-sentence version.</b> Big models learn language by hiding words and guessing them,
+    but most of the cost is the guessing — so we asked whether guessing something <em>else</em>
+    would give a better model for the same money. We tested six variations under identical
+    conditions. None of them beat an untrained model on our downstream test, and we can say
+    precisely why that is worth reporting.
+  </div>
+
+  <div class="meta">
+    <b>Team.</b> R. Daksha Subramanya · Sudeep S. S. Suvarna · Akash U. S.<br>
+    <b>Mentor.</b> Dr. Prabadevi B., Department of CSE, MSRUAS · Batch PB93<br>
+    <b>Code and results.</b> github.com/dakshadev/7th-sem
+  </div>
+</section>
+
+<!-- ============================================ 2 WHAT IS A REPRESENTATION -->
+<section class="sheet">
+  <h2><span class="num">01</span>What a model actually learns</h2>
+  <p class="lead">A language model does not store words. It turns each word into a list of numbers,
+  and learns which numbers belong near each other.</p>
+
+  <p>Think of it as a very large address book. “Doctor” and “nurse” end up with similar addresses.
+  “Doctor” and “bicycle” do not. That address — a list of 256 numbers in our case — is called a
+  <b>representation</b> (also called an <b>embedding</b> or a <b>latent</b>). Everything else in the
+  project is a way of making those addresses meaningful.</p>
+
+  <figure>
+    <svg width="100%" height="190" viewBox="0 0 720 190" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="16" font-size="10" fill="#5b6470">Three sentences going into the same encoder</text>
+      <rect x="0" y="26" width="250" height="26" rx="3" fill="#f6f7f9" stroke="#e2e5ea"/>
+      <text x="8" y="43" font-size="9.6" fill="#1c1f23">the doctor examined the patient</text>
+      <rect x="0" y="58" width="250" height="26" rx="3" fill="#f6f7f9" stroke="#e2e5ea"/>
+      <text x="8" y="75" font-size="9.6" fill="#1c1f23">the nurse checked the charts</text>
+      <rect x="0" y="90" width="250" height="26" rx="3" fill="#f6f7f9" stroke="#e2e5ea"/>
+      <text x="8" y="107" font-size="9.6" fill="#1c1f23">the bicycle needs a new tyre</text>
+
+      <rect x="286" y="26" width="96" height="90" rx="4" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="334" y="66" text-anchor="middle" font-size="10" fill="#1c1f23" font-weight="600">Encoder</text>
+      <text x="334" y="82" text-anchor="middle" font-size="8.6" fill="#5b6470">4 layers</text>
+
+      <line x1="386" y1="71" x2="410" y2="71" stroke="#5b6470" stroke-width="1.3"/>
+      <line x1="410" y1="40" x2="410" y2="104" stroke="#5b6470" stroke-width="1.3"/>
+      <line x1="410" y1="40" x2="424" y2="40" stroke="#5b6470" stroke-width="1.3"/>
+      <line x1="410" y1="71" x2="424" y2="71" stroke="#5b6470" stroke-width="1.3"/>
+      <line x1="410" y1="104" x2="424" y2="104" stroke="#5b6470" stroke-width="1.3"/>
+
+      <text x="452" y="44" font-size="9" fill="#5b6470">[0.12, −0.88, 0.31, …]</text>
+      <text x="452" y="75" font-size="9" fill="#5b6470">[0.15, −0.81, 0.29, …]</text>
+      <text x="452" y="108" font-size="9" fill="#5b6470">[0.90, 0.22, −0.44, …]</text>
+
+      <text x="452" y="140" font-size="9" fill="#2f5d8a">first two are close · last one is far</text>
+      <path d="M690 40 L690 108" stroke="#b4553f" stroke-width="1.2" stroke-dasharray="3 3"/>
+      <text x="696" y="78" font-size="8.4" fill="#b4553f" transform="rotate(90 696 78)">distance</text>
+
+      <text x="0" y="150" font-size="9.6" fill="#1c1f23" font-weight="600">“Close” is learned, not given.</text>
+      <text x="0" y="167" font-size="9.2" fill="#5b6470">Nothing tells the model that doctor and nurse are related. The training objective decides it —</text>
+      <text x="0" y="182" font-size="9.2" fill="#5b6470">and that is the only thing we vary across our six experiments.</text>
+    </svg>
+  </figure>
+
+  <h3>Why we cannot simply copy BERT</h3>
+  <p>BERT, the model that made this approach standard, was trained on about 3.3 <b>billion</b> tokens.
+  A token is roughly three-quarters of a word, so that is a library of books. We had a free GPU and
+  time for about 5 <b>million</b> tokens — roughly 0.15% of BERT. At that scale nobody knows whether
+  the usual recipe still works, which is the honest starting point of this project.</p>
+
+  <div class="panel">
+    <b>So the question is narrow, and answerable.</b> Hold the model, the data, the budget and the
+    evaluation fixed. Change only <em>what the model is asked to predict</em>. Measure what happens
+    to the numbers it learns.
+  </div>
+</section>
+
+<!-- ============================================ 3 MASKING -->
+<section class="sheet">
+  <h2><span class="num">02</span>Hiding words — and why guessing them is a weak target</h2>
+
+  <p>The standard training game is called <b>masked language modelling</b> (MLM). Take a sentence,
+  hide about 15% of the words, and ask the model to fill in the blanks. It gets a grade based on how
+  well it guessed.</p>
+
+  <figure>
+    <svg width="100%" height="120" viewBox="0 0 720 120" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="10" width="720" height="34" rx="4" fill="#f6f7f9" stroke="#e2e5ea"/>
+      <text x="12" y="32" font-size="10.4" fill="#1c1f23">
+        the <tspan fill="#b4553f" font-weight="700">[MASK]</tspan> examined the
+        <tspan fill="#b4553f" font-weight="700">[MASK]</tspan> and wrote a
+        <tspan fill="#b4553f" font-weight="700">[MASK]</tspan>
+      </text>
+      <rect x="0" y="56" width="720" height="34" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="12" y="78" font-size="10.4" fill="#1c1f23">
+        the <tspan fill="#2f5d8a" font-weight="700">doctor</tspan> examined the
+        <tspan fill="#2f5d8a" font-weight="700">patient</tspan> and wrote a
+        <tspan fill="#2f5d8a" font-weight="700">prescription</tspan>
+      </text>
+      <text x="0" y="108" font-size="8.8" fill="#5b6470">The model sees the top line; the bottom line is the answer key it is graded against.</text>
+    </svg>
+  </figure>
+
+  <p>The trouble is the answer key is often not unique. “The doctor examined the <b>patient</b>” could
+  equally be “wound”, “report”, “X-ray”. The model is penalised for a sensible guess, and rewarded
+  for memorising which word happened to appear in the text. That noise is the thing we wanted to
+  measure instead of assuming.</p>
+
+  <h3>What we measured</h3>
+  <p>We took text the model had not seen, hid one word at a time — 26,840 positions in total — and
+  recorded how uncertain the model's guess was, in a unit called <b>nats</b>. More nats means “many
+  answers are plausible”; near zero means “only one word fits”.</p>
+
+  <div class="grid3">
+    <div class="card"><div class="num-big">1.28</div><div class="num-sub">average uncertainty (nats)</div></div>
+    <div class="card"><div class="num-big">30.2%</div><div class="num-sub">of blanks have five or more sensible answers</div></div>
+    <div class="card"><div class="num-big">60.1%</div><div class="num-sub">of blanks are almost fully determined by context</div></div>
+  </div>
+
+  <p style="margin-top:4mm">Uncertainty is not spread evenly. Rare words are harder to guess (1.52 nats)
+  than common words (1.11 nats). So the blanks that carry the most meaning are exactly the ones where
+  a word-level target teaches the least.</p>
+
+  <div class="panel warn">
+    <b>This is the motivation for the whole project.</b> If a third of the training signal is
+    “guess between five reasonable words”, then the model spends capacity on coin-flips. Can we
+    train it to predict something steadier instead?
+  </div>
+</section>
+
+<!-- ============================================ 4 THE SIX CONDITIONS -->
+<section class="sheet">
+  <h2><span class="num">03</span>The six things we trained</h2>
+  <p class="lead">Same encoder, same data, same budget, same schedule. Only the target changes.
+  Three were the original plan; three exist because a reviewer would rightly ask “did you check?”.</p>
+
+  <figure>
+    <svg width="100%" height="215" viewBox="0 0 720 215" xmlns="http://www.w3.org/2000/svg">
+      <!-- C -->
+      <rect x="0" y="6" width="228" height="94" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="12" y="26" font-size="12" font-weight="700" fill="#1c1f23">C · guess the word</text>
+      <text x="12" y="43" font-size="9" fill="#5b6470">the classic (MLM)</text>
+      <rect x="12" y="52" width="86" height="24" rx="3" fill="#f6f7f9" stroke="#c9d6e2"/>
+      <text x="55" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">[MASK]</text>
+      <line x1="102" y1="64" x2="120" y2="64" stroke="#5b6470" stroke-width="1.2"/>
+      <rect x="124" y="52" width="92" height="24" rx="3" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="170" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">“patient”</text>
+      <text x="12" y="92" font-size="8.4" fill="#5b6470">grade = did it pick the exact word</text>
+
+      <!-- A -->
+      <rect x="246" y="6" width="228" height="94" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="258" y="26" font-size="12" font-weight="700" fill="#1c1f23">A · guess the meaning</text>
+      <text x="258" y="43" font-size="9" fill="#5b6470">latent target, attention head</text>
+      <rect x="258" y="52" width="86" height="24" rx="3" fill="#f6f7f9" stroke="#c9d6e2"/>
+      <text x="301" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">[MASK]</text>
+      <line x1="348" y1="64" x2="366" y2="64" stroke="#5b6470" stroke-width="1.2"/>
+      <rect x="370" y="52" width="92" height="24" rx="3" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="416" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">256 numbers</text>
+      <text x="258" y="92" font-size="8.4" fill="#5b6470">grade = how close the numbers are</text>
+
+      <!-- B -->
+      <rect x="492" y="6" width="228" height="94" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="504" y="26" font-size="12" font-weight="700" fill="#1c1f23">B · guess the same, cheaper</text>
+      <text x="504" y="43" font-size="9" fill="#5b6470">two layers averaged, linear head</text>
+      <rect x="504" y="52" width="86" height="24" rx="3" fill="#f6f7f9" stroke="#c9d6e2"/>
+      <text x="547" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">[MASK]</text>
+      <line x1="594" y1="64" x2="612" y2="64" stroke="#5b6470" stroke-width="1.2"/>
+      <rect x="616" y="52" width="92" height="24" rx="3" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="662" y="68" text-anchor="middle" font-size="8.6" fill="#1c1f23">256 numbers</text>
+      <text x="504" y="92" font-size="8.4" fill="#5b6470">grade = gentler error, no big penalties</text>
+
+      <!-- H I J -->
+      <rect x="0" y="112" width="228" height="94" rx="4" fill="#fbf6f4" stroke="#e5cfc7"/>
+      <text x="12" y="132" font-size="12" font-weight="700" fill="#1c1f23">H · A + a seatbelt</text>
+      <text x="12" y="149" font-size="9" fill="#5b6470">VICReg: keep dimensions alive</text>
+      <text x="12" y="168" font-size="8.6" fill="#454d57">punishes a dimension that stops varying,</text>
+      <text x="12" y="181" font-size="8.6" fill="#454d57">and two dimensions that move together</text>
+
+      <rect x="246" y="112" width="228" height="94" rx="4" fill="#fbf6f4" stroke="#e5cfc7"/>
+      <text x="258" y="132" font-size="12" font-weight="700" fill="#1c1f23">I · A + a different seatbelt</text>
+      <text x="258" y="149" font-size="9" fill="#5b6470">Barlow: make dimensions unrelated</text>
+      <text x="258" y="168" font-size="8.6" fill="#454d57">punishes any two dimensions that copy</text>
+      <text x="258" y="181" font-size="8.6" fill="#454d57">each other's signal</text>
+
+      <rect x="492" y="112" width="228" height="94" rx="4" fill="#f2f6fa" stroke="#c9d6e2"/>
+      <text x="504" y="132" font-size="12" font-weight="700" fill="#1c1f23">J · A without the teacher</text>
+      <text x="504" y="149" font-size="9" fill="#5b6470">the honest control</text>
+      <text x="504" y="168" font-size="8.6" fill="#454d57">targets come from the student itself,</text>
+      <text x="504" y="181" font-size="8.6" fill="#454d57">frozen at that moment</text>
+    </svg>
+  </figure>
+
+  <h3>What “the teacher” is</h3>
+  <p>For A and B we need something to compare against — an answer key. We keep a second copy of the
+  same model and update it very slowly (99.6% old, 0.4% new at each step), so it drifts instead of
+  jumping. It is called the <b>EMA teacher</b>: exponential moving average. The idea is borrowed from
+  vision models; a slow twin gives steadier targets than a model that changes every step.</p>
+
+  <p>But nobody had checked whether the twin is necessary <em>for our size</em>, which is exactly what
+  condition J does: delete the twin, use the student's own answer, and see if anything gets worse.</p>
+
+  <h3>Why “collapse” matters, and what the seatbelts do</h3>
+  <p>If you train a model to predict its own internal numbers, it can cheat: give every sentence the
+  same numbers. The prediction becomes trivially perfect and the model learns nothing — this failure
+  is called <b>collapse</b>. The two seatbelts (VICReg and Barlow Twins) are standard tricks that
+  forbid that cheat by forcing the numbers to keep varying and to stay independent of each other.</p>
+</section>
+
+<!-- ============================================ 5 HOW WE JUDGE -->
+<section class="sheet">
+  <h2><span class="num">04</span>How we judged whether any of it worked</h2>
+  <p class="lead">Good training loss proves nothing on its own — a model can get better at the game
+  and still produce useless numbers. We used three independent checks.</p>
+
+  <h3>Check 1 — Freeze the model and use it for something real</h3>
+  <p>We take the trained encoder, freeze it completely, and train a very simple classifier on top of
+  AG News headlines (AG News: world, sports, business, science). If the numbers were meaningful, four
+  topics should be easy to separate. This is called a <b>linear probe</b>, and it is the standard
+  measure of representation quality.</p>
+
+  <figure>
+    <svg width="100%" height="132" viewBox="0 0 720 132" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="14" width="150" height="46" rx="4" fill="#eef2f7" stroke="#2f5d8a"/>
+      <text x="75" y="34" text-anchor="middle" font-size="9.6" fill="#1c1f23" font-weight="600">Trained encoder</text>
+      <text x="75" y="50" text-anchor="middle" font-size="8.4" fill="#5b6470">frozen, never updated</text>
+
+      <line x1="154" y1="37" x2="182" y2="37" stroke="#5b6470" stroke-width="1.3"/>
+      <rect x="186" y="14" width="150" height="46" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="261" y="34" text-anchor="middle" font-size="9.6" fill="#1c1f23" font-weight="600">Its 256 numbers</text>
+      <text x="261" y="50" text-anchor="middle" font-size="8.4" fill="#5b6470">for each headline</text>
+
+      <line x1="340" y1="37" x2="368" y2="37" stroke="#5b6470" stroke-width="1.3"/>
+      <rect x="372" y="14" width="150" height="46" rx="4" fill="#fff" stroke="#e2e5ea"/>
+      <text x="447" y="34" text-anchor="middle" font-size="9.6" fill="#1c1f23" font-weight="600">Tiny classifier</text>
+      <text x="447" y="50" text-anchor="middle" font-size="8.4" fill="#5b6470">4,000 examples, one layer</text>
+
+      <line x1="526" y1="37" x2="554" y2="37" stroke="#5b6470" stroke-width="1.3"/>
+      <rect x="558" y="14" width="158" height="46" rx="4" fill="#f2f6fa" stroke="#2f5d8a"/>
+      <text x="637" y="34" text-anchor="middle" font-size="9.6" fill="#1c1f23" font-weight="600">Accuracy on 1,000 held out</text>
+      <text x="637" y="50" text-anchor="middle" font-size="8.4" fill="#5b6470">the only headline number</text>
+
+      <text x="0" y="86" font-size="9.4" fill="#1c1f23" font-weight="600">The control that makes it interpretable</text>
+      <text x="0" y="103" font-size="9" fill="#5b6470">Run the identical probe on an encoder with random numbers — never trained at all. That scores 0.632.</text>
+      <text x="0" y="118" font-size="9" fill="#5b6470">Any trained model has to beat that number to have earned anything.</text>
+    </svg>
+  </figure>
+
+  <h3>Check 2 — Look at the shape of the numbers (effective rank)</h3>
+  <p>If a model uses 256 dimensions but the numbers only really vary along 12 of them, it is wasting
+  most of its capacity. <b>Effective rank</b> counts how many directions the data actually spreads
+  across. It catches collapse even when the loss looks healthy.</p>
+
+  <h3>Check 3 — Measure how ambiguous the target is</h3>
+  <p>The entropy study from section 02. It tests the premise of the project rather than the model.</p>
+
+  <div class="panel">
+    <b>Why three checks and not one.</b> Loss can improve while the numbers get worse (we saw it).
+    Rank can rise while accuracy stays flat (we saw that too). Only reporting all three keeps us
+    honest about which claim is supported by which measurement.
+  </div>
+</section>
+
+<!-- ============================================ 6 RESULTS -->
+<section class="sheet">
+  <h2><span class="num">05</span>What actually came out</h2>
+  <p class="lead">24 models in total: six conditions × two budgets × two random seeds.</p>
+
+  <figure>
+    <img src="__CHART_B64__" class="chart-sm" alt="Bar chart of AG News accuracy by condition and budget">
+    <figcaption>Frozen-probe accuracy; the chart's “700k” label is this 0.69M tier. Dashed line = untrained model.</figcaption>
+  </figure>
+
+  <table>
+    <tr><th>Condition</th><th>0.69M tokens</th><th>5M tokens</th><th>Plain reading</th></tr>
+    <tr><td><b>C</b> — guess the word</td><td>0.577</td><td>0.532</td><td>classic method, still below random</td></tr>
+    <tr><td><b>A</b> — guess the numbers</td><td>0.589</td><td>0.549</td><td>best at small budget, worse after</td></tr>
+    <tr><td><b>B</b> — cheaper variant</td><td>0.586</td><td>0.537</td><td>no real difference from A</td></tr>
+    <tr class="hi"><td><b>H</b> — A + VICReg seatbelt</td><td>0.593</td><td>0.567</td><td>small recovery at the larger budget</td></tr>
+    <tr class="hi"><td><b>I</b> — A + Barlow seatbelt</td><td>0.597</td><td>0.567</td><td>same, no better than H</td></tr>
+    <tr class="hi"><td><b>J</b> — A without a teacher</td><td>0.597</td><td><b>0.573</b></td><td>best of the large-budget runs</td></tr>
+    <tr><td><b>Untrained model</b></td><td>0.632</td><td>0.632</td><td>nothing we trained beat this</td></tr>
+  </table>
+
+  <h3>Three findings, in order of how uncomfortable they are</h3>
+  <ul>
+    <li><b>Nothing beat the untrained model.</b> Best single run 0.607 against 0.632 for the
+    untrained encoder; the table above shows two-seed means, which peak at 0.597.</li>
+    <li><b>More training made it worse.</b> 0.69M → 5M tokens cost every condition 0.02–0.05
+    accuracy while the training loss kept improving.</li>
+    <li><b>The seatbelts and the teacher are not the answer.</b> The anti-collapse tricks helped a
+    little at the larger budget but never reached random, and removing the teacher helped
+    <em>more</em> than either — which argues against our own original design.</li>
+  </ul>
+
+  <div class="panel warn">
+    <b>Our leading explanation.</b> Training only ever shows the model damaged sentences; the probe
+    shows it clean ones. Extra tokens make it better at damaged text and no better at clean text,
+    because the clean path is never trained. One experiment settles it: probe the same models with
+    holes in the input.
+  </div>
+</section>
+
+<!-- ============================================ 7 DECK + PAPER -->
+<section class="sheet">
+  <h2><span class="num">06</span>What is inside the two documents</h2>
+
+  <h3>The interim presentation (15 slides, university template)</h3>
+  <p>Structured to the template's required order, and safe to present as-is.</p>
+  <table>
+    <tr><th style="width:22%">Slides</th><th>What they do</th></tr>
+    <tr><td>1–2</td><td>Title and outline. The only blanks left are the registration numbers, which you fill in.</td></tr>
+    <tr><td>3–4</td><td>The problem and the gap: MLM is ambiguous, latent targets work in vision, nobody has checked them for a small text encoder.</td></tr>
+    <tr><td>5</td><td>Objectives table — what was promised, what is done, which file proves it. All four marked complete.</td></tr>
+    <tr><td>6–8</td><td>How it works, what data was used, and why a free GPU is enough (24 runs cost 1.2 GPU-hours in total).</td></tr>
+    <tr><td>9</td><td>The evidence slide: 64 tests, 24 runs, the accuracy chart, and the negative result stated plainly.</td></tr>
+    <tr><td>10–11</td><td>Live demonstration script, then what is left: the masked-versus-clean test, D–G at full budget, a second task.</td></tr>
+    <tr><td>12–15</td><td>SDG alignment, conclusion, references, thanks.</td></tr>
+  </table>
+
+  <h3>The interim draft paper (9 pages, 27 references)</h3>
+  <p>The mentor asked for a synopsis with fixed sections, not a conference format. Every number in it
+  is generated from the result files, so it cannot drift from the evidence.</p>
+  <table>
+    <tr><th style="width:22%">Section</th><th>What it argues</th></tr>
+    <tr><td>Abstract</td><td>The whole story in 250 words, ending on the negative result.</td></tr>
+    <tr><td>1 Introduction</td><td>Pretraining is expensive; the token target is ambiguous; here is the measured evidence (30.2% of blanks).</td></tr>
+    <tr><td>2 Related work</td><td>27 papers in five strands — MLM and compression, latent targets, self-distillation and collapse, sentence objectives and geometry, scaling.</td></tr>
+    <tr><td>3 Methods</td><td>Encoder, all six objectives, the schedule fix, data, and the three evaluations. Includes the caveat that H and I are auxiliaries, not reproductions of the original papers.</td></tr>
+    <tr><td>4 Results</td><td>Five tables: losses, probe accuracy, effective rank, entropy, component ablations.</td></tr>
+    <tr><td>5 Discussion</td><td>Why random wins, why collapse is ruled out, why the teacher is not earning its place, and the masked-versus-clean hypothesis.</td></tr>
+    <tr><td>6 Conclusion</td><td>What is built, what is measured, and the next experiment.</td></tr>
+    <tr><td>References</td><td>27 entries, each with a resolvable DOI or arXiv ID.</td></tr>
+  </table>
+
+  <div class="panel">
+    <b>If someone asks “what did you actually build?”</b> One encoder shared by six objectives; a
+    masking pipeline with two policies; a harness with resumable checkpoints and a commit hash per
+    run; three evaluation instruments; 64 tests; 24 runs, stored as JSON and rendered into both
+    documents automatically.
+  </div>
+</section>
+
+<!-- ============================================ 8 GLOSSARY -->
+<section class="sheet">
+  <h2><span class="num">07</span>Words you will hear, in one line each</h2>
+
+  <table>
+    <tr><th style="width:26%">Term</th><th>Plain meaning</th></tr>
+    <tr><td><b>Token</b></td><td>A word or piece of a word. “unhappiness” might be three tokens.</td></tr>
+    <tr><td><b>Masking</b></td><td>Hiding some tokens and asking the model to recover them.</td></tr>
+    <tr><td><b>Representation / latent</b></td><td>The list of 256 numbers the encoder produces for a piece of text. Its “address”.</td></tr>
+    <tr><td><b>MLM</b></td><td>Masked language modelling — the classic objective: predict the hidden word.</td></tr>
+    <tr><td><b>Latent target</b></td><td>Predicting the teacher's internal numbers instead of a word.</td></tr>
+    <tr><td><b>Teacher / EMA</b></td><td>A second copy of the model, updated slowly, used as the answer key.</td></tr>
+    <tr><td><b>Collapse</b></td><td>The cheat where every input gets the same numbers, so prediction becomes trivial.</td></tr>
+    <tr><td><b>VICReg / Barlow Twins</b></td><td>Two published recipes that forbid collapse by forcing the numbers to vary and stay independent.</td></tr>
+    <tr><td><b>Linear probe</b></td><td>Freeze the model, fit a one-layer classifier on its numbers, report accuracy.</td></tr>
+    <tr><td><b>Effective rank</b></td><td>How many directions the numbers actually spread across, out of 256.</td></tr>
+    <tr><td><b>Entropy (nats)</b></td><td>How uncertain a prediction is. Zero means certain; 1.6 or more means several answers fit.</td></tr>
+    <tr><td><b>Ablation</b></td><td>Removing one piece on purpose to see if it was doing anything.</td></tr>
+    <tr><td><b>Budget</b></td><td>How many tokens the model is trained on. Ours: 0.69 million and 5 million.</td></tr>
+    <tr><td><b>Seed</b></td><td>A number that fixes the randomness, so a run can be repeated exactly.</td></tr>
+  </table>
+
+  <h3>The three things worth remembering</h3>
+  <div class="grid3">
+    <div class="card">
+      <h4>1 · The question was fair</h4>
+      <p>We measured that a third of masked positions have no single right answer, so asking the model
+      to guess words is genuinely a noisy target.</p>
+    </div>
+    <div class="card">
+      <h4>2 · The answer was no</h4>
+      <p>Six objectives, two budgets, two seeds, 24 runs. Not one of them beat an encoder that was
+      never trained at all.</p>
+    </div>
+    <div class="card">
+      <h4>3 · The negative result is useful</h4>
+      <p>We ruled out collapse. We ruled out the teacher. That leaves one testable explanation, and we
+      know what experiment settles it.</p>
+    </div>
+  </div>
+
+  <p class="small muted" style="margin-top:8mm">All figures in this brief are read from
+  <code>results/person1/*.json</code> in the repository; the presentation and the paper are built from
+  the same files. If a number changes, all three change together.</p>
+</section>
+
+</body>
+</html>
