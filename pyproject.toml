@@ -32,8 +32,10 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.per-file-ignores]
-# The deck generator is mostly long prose strings; wrapping them hurts readability.
+# The deck and synopsis generators are mostly long prose strings; wrapping them hurts
+# readability and would break the sentence flow the reader sees.
 "scripts/build_midreview_deck.py" = ["E501"]
+"scripts/build_synopsis.py" = ["E501"]
 # Person 2's modules are long-line heavy in comments and CLI help text; reflowing them adds
 # churn without value, so only the line-length rule is relaxed there.
 "src/data.py" = ["E501"]
