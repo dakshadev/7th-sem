@@ -278,8 +278,8 @@ def build() -> Document:
          "rather than isolated tokens yields gains on span-selection tasks (Joshi et al., 2020). A "
          "parallel line compresses existing encoders by distilling a pretrained teacher: DistilBERT "
          "(Sanh et al., 2019), TinyBERT (Jiao et al., 2020) and MiniLM (Wang et al., 2020). DeBERTa "
-         "belongs to a different line, changing how attention encodes position relative to content "
-         "rather than starting from a teacher (He et al., 2020). T5 recast every objective as "
+         "belongs to a different line, disentangling content and position inside attention rather "
+         "than starting from a teacher (He et al., 2020). T5 recast every objective as "
          "text-to-text generation (Raffel et al., 2020). What this line shares is that the target remains defined over the vocabulary; "
          "none of these objectives removes the ambiguity of the target itself.")
     heading(doc, "2.2 Latent targets and masked representation modelling", 2)
