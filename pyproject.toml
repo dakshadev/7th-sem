@@ -40,7 +40,7 @@ select = ["E", "F", "I", "UP", "B"]
 "scripts/extend_deck_for_review.py" = ["E501"]
 "scripts/make_result_screenshots.py" = ["E501"]
 "scripts/build_dashboard.py" = ["E501"]
-"scripts/build_deck_final.py" = ["E501"]
+"scripts/build_deck_payload.py" = ["E501"]
 # Person 2's modules are long-line heavy in comments and CLI help text; reflowing them adds
 # churn without value, so only the line-length rule is relaxed there.
 "src/data.py" = ["E501"]
