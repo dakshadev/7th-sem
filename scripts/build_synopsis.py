@@ -11,6 +11,7 @@ Out: docs/SYNOPSIS_interim_draft_paper.docx
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from docx import Document
@@ -22,7 +23,8 @@ from docx.shared import Pt, RGBColor
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "results" / "person1"
-OUT = ROOT / "docs" / "SYNOPSIS_interim_draft_paper.docx"
+# SYNOPSIS_OUT lets the document be rebuilt while Word holds the canonical file open.
+OUT = Path(os.environ.get("SYNOPSIS_OUT", ROOT / "docs" / "SYNOPSIS_interim_draft_paper.docx"))
 
 TITLE = ("Masked Latent Prediction for Small Text Encoders: A Matched Comparison of Token, "
          "Latent and Regularised Objectives under a Fixed Compute Budget")
@@ -66,30 +68,30 @@ CONDITIONS_TABLE = [
 REFERENCES = [
  'J. Devlin, M.-W. Chang, K. Lee, and K. Toutanova, "BERT: Pre-training of deep bidirectional transformers for language understanding," in Proc. NAACL-HLT, 2019, doi: 10.18653/v1/N19-1423.',
  'Y. Liu, M. Ott, N. Goyal, et al., "RoBERTa: A robustly optimized BERT pretraining approach," arXiv:1907.11692, 2019.',
- 'K. Clark, M.-T. Luong, Q. V. Le, and C. D. Manning, "ELECTRA: Pre-training text encoders as discriminators rather than generators," arXiv:2003.10555, 2020.',
- 'M. Joshi, D. Chen, Y. Liu, et al., "SpanBERT: Improving pre-training by representing and predicting spans," Transactions of the ACL, 2020.',
+ 'K. Clark, M.-T. Luong, Q. V. Le, and C. D. Manning, "ELECTRA: Pre-training text encoders as discriminators rather than generators," in Proc. ICLR, 2020; arXiv:2003.10555.',
+ 'M. Joshi, D. Chen, Y. Liu, et al., "SpanBERT: Improving pre-training by representing and predicting spans," Transactions of the ACL, 2020, doi: 10.1162/tacl_a_00300.',
  'V. Sanh, L. Debut, J. Chaumond, and T. Wolf, "DistilBERT, a distilled version of BERT: smaller, faster, cheaper and lighter," arXiv:1910.01108, 2019.',
- 'X. Jiao, Y. Yin, L. Shang, et al., "TinyBERT: Distilling BERT for natural language understanding," Findings of ACL, 2020.',
+ 'X. Jiao, Y. Yin, L. Shang, et al., "TinyBERT: Distilling BERT for natural language understanding," Findings of ACL, 2020, doi: 10.18653/v1/2020.findings-emnlp.372.',
  'W. Wang, F. Wei, L. Dong, et al., "MiniLM: Deep self-attention distillation for task-agnostic compression of pre-trained transformers," arXiv:2002.10957, 2020.',
- 'P. He, X. Liu, J. Gao, and W. Chen, "DeBERTa: Decoding-enhanced BERT with disentangled attention," arXiv:2006.03654, 2020.',
- 'C. Raffel, N. Shazeer, A. Roberts, et al., "Exploring the limits of transfer learning with a unified text-to-text transformer," Journal of Machine Learning Research, vol. 21, 2020.',
- 'K. He, X. Chen, S. Xie, et al., "Masked autoencoders are scalable vision learners," in Proc. CVPR, 2022.',
- 'H. Bao, L. Dong, S. Piao, and F. Wei, "BEiT: BERT pre-training of image transformers," arXiv:2106.08254, 2021.',
- 'Z. Xie, Z. Zhang, Y. Cao, et al., "SimMIM: A simple framework for masked image modeling," in Proc. CVPR, 2022.',
- 'A. Baevski, W.-N. Hsu, Q. Xu, et al., "data2vec: A general framework for self-supervised learning in speech, vision and language," arXiv:2202.03555, 2022.',
- 'J.-B. Grill, F. Strub, F. Altché, et al., "Bootstrap your own latent: A new approach to self-supervised learning," arXiv:2006.07733, 2020.',
- 'X. Chen and K. He, "Exploring simple siamese representation learning," in Proc. CVPR, 2021.',
- 'K. He, H. Fan, Y. Wu, et al., "Momentum contrast for unsupervised visual representation learning," in Proc. CVPR, 2020.',
- 'M. Caron, H. Touvron, I. Misra, et al., "Emerging properties in self-supervised vision transformers," in Proc. ICCV, 2021.',
- 'A. Bardes, J. Ponce, and Y. LeCun, "VICReg: Variance-invariance-covariance regularization for self-supervised learning," arXiv:2105.04906, 2021.',
- 'J. Zbontar, L. Jing, I. Misra, et al., "Barlow Twins: Self-supervised learning via redundancy reduction," arXiv:2103.03230, 2021.',
- 'T. Gao, X. Yao, and D. Chen, "SimCSE: Simple contrastive learning of sentence embeddings," in Proc. EMNLP, 2021.',
- 'N. Reimers and I. Gurevych, "Sentence-BERT: Sentence embeddings using siamese BERT-networks," in Proc. EMNLP-IJCNLP, 2019.',
- 'K. Ethayarajh, "How contextual are contextualized word representations? Comparing the geometry of BERT, ELMo, and GPT-2 embeddings," in Proc. EMNLP-IJCNLP, 2019.',
- 'J. Gao, D. He, X. Tan, et al., "Representation degeneration problem in training natural language generation models," arXiv:1907.12009, 2019.',
- 'S. Merity, C. Xiong, J. Bradbury, and R. Socher, "Pointer sentinel mixture models," arXiv:1609.07843, 2016.',
- 'X. Zhang, J. Zhao, and Y. LeCun, "Character-level convolutional networks for text classification," arXiv:1509.01626, 2015.',
- 'R. Socher, A. Perelygin, J. Wu, et al., "Recursive deep models for semantic compositionality over a sentiment treebank," in Proc. EMNLP, 2013.',
+ 'P. He, X. Liu, J. Gao, and W. Chen, "DeBERTa: Decoding-enhanced BERT with disentangled attention," in Proc. ICLR, 2021; arXiv:2006.03654.',
+ 'C. Raffel, N. Shazeer, A. Roberts, et al., "Exploring the limits of transfer learning with a unified text-to-text transformer," Journal of Machine Learning Research, vol. 21, 2020; arXiv:1910.10683.',
+ 'K. He, X. Chen, S. Xie, et al., "Masked autoencoders are scalable vision learners," in Proc. CVPR, 2022, doi: 10.1109/CVPR52688.2022.01553.',
+ 'H. Bao, L. Dong, S. Piao, and F. Wei, "BEiT: BERT pre-training of image transformers," in Proc. ICLR, 2022; arXiv:2106.08254.',
+ 'Z. Xie, Z. Zhang, Y. Cao, et al., "SimMIM: A simple framework for masked image modeling," in Proc. CVPR, 2022, doi: 10.1109/CVPR52688.2022.00943.',
+ 'A. Baevski, W.-N. Hsu, Q. Xu, et al., "data2vec: A general framework for self-supervised learning in speech, vision and language," in Proc. ICML, 2022; arXiv:2202.03555.',
+ 'J.-B. Grill, F. Strub, F. Altché, et al., "Bootstrap your own latent: A new approach to self-supervised learning," in Proc. NeurIPS, 2020; arXiv:2006.07733.',
+ 'X. Chen and K. He, "Exploring simple siamese representation learning," in Proc. CVPR, 2021, doi: 10.1109/CVPR46437.2021.01549.',
+ 'K. He, H. Fan, Y. Wu, et al., "Momentum contrast for unsupervised visual representation learning," in Proc. CVPR, 2020, doi: 10.1109/CVPR42600.2020.00975.',
+ 'M. Caron, H. Touvron, I. Misra, et al., "Emerging properties in self-supervised vision transformers," in Proc. ICCV, 2021, doi: 10.1109/ICCV48922.2021.00951.',
+ 'A. Bardes, J. Ponce, and Y. LeCun, "VICReg: Variance-invariance-covariance regularization for self-supervised learning," in Proc. ICLR, 2022; arXiv:2105.04906.',
+ 'J. Zbontar, L. Jing, I. Misra, et al., "Barlow Twins: Self-supervised learning via redundancy reduction," in Proc. ICML, 2021; arXiv:2103.03230.',
+ 'T. Gao, X. Yao, and D. Chen, "SimCSE: Simple contrastive learning of sentence embeddings," in Proc. EMNLP, 2021, doi: 10.18653/v1/2021.emnlp-main.552.',
+ 'N. Reimers and I. Gurevych, "Sentence-BERT: Sentence embeddings using siamese BERT-networks," in Proc. EMNLP-IJCNLP, 2019, doi: 10.18653/v1/D19-1410.',
+ 'K. Ethayarajh, "How contextual are contextualized word representations? Comparing the geometry of BERT, ELMo, and GPT-2 embeddings," in Proc. EMNLP-IJCNLP, 2019, doi: 10.18653/v1/D19-1006.',
+ 'J. Gao, D. He, X. Tan, et al., "Representation degeneration problem in training natural language generation models," in Proc. ICLR, 2019; arXiv:1907.12009.',
+ 'S. Merity, C. Xiong, J. Bradbury, and R. Socher, "Pointer sentinel mixture models," in Proc. ICLR, 2017; arXiv:1609.07843.',
+ 'X. Zhang, J. Zhao, and Y. LeCun, "Character-level convolutional networks for text classification," in Proc. NeurIPS, 2015; arXiv:1509.01626.',
+ 'R. Socher, A. Perelygin, J. Wu, et al., "Recursive deep models for semantic compositionality over a sentiment treebank," in Proc. EMNLP, 2013, doi: 10.18653/v1/D13-1170.',
  'J. Kaplan, S. McCandlish, T. Henighan, et al., "Scaling laws for neural language models," arXiv:2001.08361, 2020.',
 ]
 
@@ -274,10 +276,11 @@ def build() -> Document:
          "rather than architecture (Liu et al., 2019), ELECTRA replaced token recovery with "
          "discrimination (Clark et al., 2020), and SpanBERT showed that predicting contiguous spans "
          "rather than isolated tokens yields gains on span-selection tasks (Joshi et al., 2020). A "
-         "parallel line compresses existing encoders: DistilBERT (Sanh et al., 2019), TinyBERT "
-         "(Jiao et al., 2020), MiniLM (Wang et al., 2020) and DeBERTa (He et al., 2020) all begin "
-         "from a pretrained teacher. T5 recast every objective as text-to-text generation (Raffel et "
-         "al., 2020). What this line shares is that the target remains defined over the vocabulary; "
+         "parallel line compresses existing encoders by distilling a pretrained teacher: DistilBERT "
+         "(Sanh et al., 2019), TinyBERT (Jiao et al., 2020) and MiniLM (Wang et al., 2020). DeBERTa "
+         "belongs to a different line, changing how attention encodes position relative to content "
+         "rather than starting from a teacher (He et al., 2020). T5 recast every objective as "
+         "text-to-text generation (Raffel et al., 2020). What this line shares is that the target remains defined over the vocabulary; "
          "none of these objectives removes the ambiguity of the target itself.")
     heading(doc, "2.2 Latent targets and masked representation modelling", 2)
     para(doc,
@@ -292,8 +295,8 @@ def build() -> Document:
     heading(doc, "2.3 Self-distillation, momentum teachers and collapse", 2)
     para(doc,
          "BYOL showed that an exponential-moving-average teacher can supply targets without "
-         "negatives (Grill et al., 2020); SimSiam showed a stop-gradient alone can suffice (Chen and "
-         "He, 2021); MoCo made the negative queue and momentum encoder explicit (He et al., 2020); "
+         "negatives (Grill et al., 2020); SimSiam showed that negative pairs are unnecessary, "
+         "needing only a stop-gradient and an asymmetric predictor (Chen and He, 2021); MoCo made the negative queue and momentum encoder explicit (He et al., 2020); "
          "DINO added centring and sharpening to stabilise the teacher's outputs (Caron et al., "
          "2021). Because these methods can trivially collapse, two families of explicit guards were "
          "proposed: VICReg penalises dimensions whose variance falls below a floor and "
@@ -304,9 +307,10 @@ def build() -> Document:
          "conditions H and I test.")
     heading(doc, "2.4 Sentence-level objectives and representation geometry", 2)
     para(doc,
-         "SimCSE and Sentence-BERT established that contrastive objectives over sentence pairs can "
-         "produce usable sentence representations from pretrained encoders (Gao et al., 2021; "
-         "Reimers and Gurevych, 2019). Two findings from the geometry literature are directly "
+         "Sentence-pair objectives produce usable sentence representations from pretrained "
+         "encoders: Sentence-BERT trains a siamese encoder on classification and regression over "
+         "pairs (Reimers and Gurevych, 2019), while SimCSE applies an explicitly contrastive "
+         "objective with dropout as the augmentation (Gao et al., 2021). Two findings from the geometry literature are directly "
          "relevant to our evaluation. Ethayarajh showed that contextual representations occupy a "
          "narrow cone whose anisotropy grows with depth, which makes a linear probe sensitive to "
          "scale rather than only to content (Ethayarajh, 2019). Gao et al. showed that natural "
