@@ -1,0 +1,155 @@
+{
+ "methodology_title": "Methodology — five modules",
+ "methodology_rows": [
+  [
+   "Module",
+   "What it does",
+   "Implementation"
+  ],
+  [
+   "1 · Data pipeline",
+   "Loads WikiText, tokenises, masks 15% under a span or independent policy, and writes a manifested batch file with a hash",
+   "src/data.py, scripts/build_batches.py"
+  ],
+  [
+   "2 · Encoder",
+   "4-layer Transformer, width 256, shared by every condition so only the objective changes",
+   "src/model.py"
+  ],
+  [
+   "3 · Objectives",
+   "MLM control, latent recipes A and B, VICReg and Barlow auxiliaries, and a no-teacher control",
+   "src/objectives.py, configs/*.json"
+  ],
+  [
+   "4 · Training",
+   "AdamW with an annealed schedule, EMA teacher, resumable checkpoints and provenance in every run",
+   "src/train.py, scripts/run_pilot.py"
+  ],
+  [
+   "5 · Evaluation",
+   "Effective rank, frozen linear probe on AG News, and the ambiguity analysis",
+   "src/evaluate.py, scripts/run_probe.py"
+  ]
+ ],
+ "hyper_title": "Hyperparameters and training parameters",
+ "hyper_rows": [
+  [
+   "Parameter",
+   "Value",
+   "Parameter",
+   "Value"
+  ],
+  [
+   "Encoder layers",
+   "4",
+   "Encoder width",
+   "256"
+  ],
+  [
+   "Attention heads",
+   "4",
+   "Feed-forward width",
+   "1024"
+  ],
+  [
+   "Dropout",
+   "0.10",
+   "Sequence length",
+   "128"
+  ],
+  [
+   "Vocabulary",
+   "30,522 (bert-base-uncased)",
+   "Positional encoding",
+   "learned"
+  ],
+  [
+   "Optimiser",
+   "AdamW",
+   "Learning rate",
+   "3e-4"
+  ],
+  [
+   "Weight decay",
+   "0.01",
+   "Betas",
+   "(0.9, 0.999)"
+  ],
+  [
+   "Warmup",
+   "100 updates",
+   "Gradient clipping",
+   "1.0"
+  ],
+  [
+   "Schedule",
+   "linear decay to 0",
+   "Max updates",
+   "budget / 575"
+  ],
+  [
+   "Batch size",
+   "8 sequences",
+   "Tokens per update",
+   "575 (measured)"
+  ],
+  [
+   "Mask ratio",
+   "15% of positions",
+   "Mask policy",
+   "span-3 or independent"
+  ],
+  [
+   "Teacher",
+   "EMA copy, decay 0.996",
+   "Teacher update",
+   "after each step, detached"
+  ],
+  [
+   "Budget tier 1",
+   "0.69M tokens (1,217 updates)",
+   "Budget tier 2",
+   "5.0M tokens (8,668 updates)"
+  ],
+  [
+   "Seeds",
+   "17 and 43",
+   "Runs reported",
+   "24 (6 conditions × 2 budgets × 2 seeds)"
+  ]
+ ],
+ "evidence_title": "Implementation evidence — module-wise results",
+ "evidence_images": [
+  "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\docs\\assets\\mod1_data.png",
+  "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\docs\\assets\\mod2_train.png",
+  "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\docs\\assets\\mod3_latent.png",
+  "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\docs\\assets\\mod4_tests.png"
+ ],
+ "evidence_bullets": [
+  "• Data module: 600 WikiText-103 records became 75 batches — 39,388 tokens, 5,767 masked targets, hashed and manifested before training.",
+  "• Training module: latent recipe A on CPU, loss 2.018 → 1.086 over 75 updates, with checkpoint, metrics and metadata written.",
+  "• Same data, same schedule, MLM control — the only difference is what the model is asked to predict.",
+  "• 64 automated tests pass, and every run records its commit hash and the tokens it actually saw."
+ ],
+ "dashboard": "C:\\Users\\daksh\\MyLife\\Work\\7th-sem\\docs\\assets\\dashboard.png",
+ "repo": "https://github.com/dakshadev/7th-sem",
+ "demo_bullets": [
+  "Dashboard rebuilt from results/person1/*.json: six conditions, two budgets, geometry, ambiguity.",
+  "Walkthrough: build batches, train 40 updates, probe, geometry - all from committed scripts.",
+  "Repository: github.com/dakshadev/7th-sem (link below and on the contents slide).",
+  "Demo recording: to be captured before the review and stored in docs/assets - not claimed as done here."
+ ],
+ "outline": [
+  "Introduction — why latent targets, and why small budgets change the answer",
+  "Problem statement — the call, and the research question",
+  "Literature survey — 15 papers in three tables, and the approved gaps G1–G5",
+  "Approved objectives, and progress against each one",
+  "Methodology — five modules, and the hyperparameters they run on",
+  "Dataset description and computing requirements",
+  "Implementation evidence — module-wise results, then preliminary results",
+  "Live demonstration — dashboard and repository walkthrough",
+  "Remaining work, risks and SDG alignment",
+  "Conclusion and references"
+ ]
+}

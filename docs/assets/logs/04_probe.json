@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "device": "cpu",
+  "torch": "2.9.1+cpu",
+  "cuda_available": false,
+  "gpu": null,
+  "seed": 42,
+  "probe": "frozen linear probe, StandardScaler + LogisticRegression fit on train split only",
+  "students": {
+    "run-a": {
+      "student": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-a\\student.pt",
+      "student_sha256": "959fffaeab5b1af722b82c6d63d7a5617c2da2a90b92382442f7dca4e2012149",
+      "train_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "train",
+        "requested": 2000,
+        "used": 2000,
+        "class_counts": {
+          "0": 477,
+          "1": 338,
+          "2": 408,
+          "3": 777
+        }
+      },
+      "test_meta": {
+        "dataset": "fancyzhx/ag_news",
+        "split": "test",
+        "requested": 500,
+        "used": 500,
+        "class_counts": {
+          "0": 122,
+          "1": 145,
+          "2": 106,
+          "3": 127
+        }
+      },
+      "feature_shape": [
+        2000,
+        256
+      ],
+      "pooling": "masked mean over valid, non-special tokens; uncorrupted inputs; frozen eval mode",
+      "labels": [
+        "World",
+        "Sports",
+        "Business",
+        "Sci/Tech"
+      ],
+      "accuracy": 0.55,
+      "macro_f1": 0.5486201833276702,
+      "majority_baseline": 0.29,
+      "train_samples": 2000,
+      "test_samples": 500,
+      "num_classes": 4
+    }
+  },
+  "not_run": [
+    "second seed",
+    "hyperparameter search on the probe (deliberately fixed at C=1.0, max_iter=1000)",
+    "larger probe splits"
+  ],
+  "random_baseline": {
+    "student": "random-initialised SmallEncoder (same architecture)",
+    "student_sha256": null,
+    "train_meta": {
+      "dataset": "fancyzhx/ag_news",
+      "split": "train",
+      "requested": 2000,
+      "used": 2000,
+      "class_counts": {
+        "0": 477,
+        "1": 338,
+        "2": 408,
+        "3": 777
+      }
+    },
+    "test_meta": {
+      "dataset": "fancyzhx/ag_news",
+      "split": "test",
+      "requested": 500,
+      "used": 500,
+      "class_counts": {
+        "0": 122,
+        "1": 145,
+        "2": 106,
+        "3": 127
+      }
+    },
+    "feature_shape": [
+      2000,
+      256
+    ],
+    "accuracy": 0.578,
+    "macro_f1": 0.576234120570505,
+    "majority_baseline": 0.29,
+    "train_samples": 2000,
+    "test_samples": 500,
+    "num_classes": 4
+  }
+}

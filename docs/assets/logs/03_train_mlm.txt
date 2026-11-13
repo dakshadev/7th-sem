@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "variant": "C",
+  "config_path": "configs\\mlm_c.json",
+  "device": "cpu",
+  "bounded_by": {
+    "segment_updates": 120,
+    "token_budget": 10000000
+  },
+  "measured": {
+    "overall_wall_clock_seconds": 231.40865180001128,
+    "training_wall_clock_seconds": 227.66238280001562,
+    "step_seconds": 226.56815000000643,
+    "updates": 75,
+    "nonpadding_tokens": 39388,
+    "masked_targets": 5767,
+    "cumulative_nonpadding_tokens": 39388,
+    "cumulative_masked_targets": 5767,
+    "skipped_batches": 0,
+    "first_train_loss": 10.499395370483398,
+    "last_train_loss": 8.350974082946777
+  },
+  "stop_reason": "exhausted",
+  "metadata_lifecycle": {
+    "status": "completed",
+    "stop_reason": "exhausted"
+  },
+  "artifacts": {
+    "metadata": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-c\\metadata.json",
+    "metrics": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-c\\metrics.jsonl",
+    "checkpoint": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-c\\checkpoint.pt",
+    "student": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-c\\student.pt",
+    "batch_artifact": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\independent.pt",
+    "batch_manifest": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\independent.manifest.json"
+  },
+  "data": {
+    "batch_artifact_sha256": "d7be4207384da21c181194380ae7abf8321600a42ef7e94bbbdc3fb3619903d9",
+    "source": {
+      "kind": "datasets-streaming",
+      "seen_rows": 923,
+      "scan_limit": 12000,
+      "revision": "not_pinned_by_streaming_loader",
+      "dataset": "Salesforce/wikitext",
+      "config": "wikitext-103-raw-v1",
+      "split": "train",
+      "requested_max_records": 600,
+      "records_used": 600,
+      "skipped_empty_records": 0,
+      "source_texts_sha256": "9e8f64958bf6a7eb91fcb8ef3eabef7d683d96dd25c50ac9f82c4bf00d7e6ff5"
+    },
+    "counts": {
+      "records": 600,
+      "skipped_empty_records": 0,
+      "skipped_batches_without_targets": 0,
+      "batches": 75,
+      "nonpadding_tokens": 39388,
+      "masked_targets": 5767
+    },
+    "limitations": [
+      "Bounded pilot subset only: this is not the full proposed 5M-token WikiText-103 training budget and must not be reported as one.",
+      "Exactly one split is read; train and validation are never joined.",
+      "Dataset streaming order is not revision-pinned; source_texts_sha256 identifies the exact selected subset.",
+      "This artifact is machine-local and is not a durable collaborator handle.",
+      "No downstream geometry, probe, or transfer claim is established by this file."
+    ]
+  },
+  "not_run": {
+    "validation": "not_run: no separate held-out validation split supplied",
+    "geometry": "not_run: use src.evaluate_bridge after the pilot",
+    "linear_probe": "not_run: labels not supplied",
+    "gpu_throughput": "not_run: CPU-only run"
+  },
+  "limitations": [
+    "Bounded pilot subset only: this is not the full proposed 5M-token WikiText-103 training budget and must not be reported as one.",
+    "A short pilot cannot establish non-collapse, superiority, or useful transfer.",
+    "MLM cross-entropy and latent losses are not directly comparable."
+  ]
+}

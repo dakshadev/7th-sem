@@ -1,0 +1,3 @@
+b86bbd9 docs(deck): restructure the interim deck to the mentor's slide-by-slide instructions
+8e4751f docs: add an eight-page plain-language brief for the team
+fc34602 docs: swap the corrected synopsis into the canonical filename

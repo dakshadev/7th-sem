@@ -1,0 +1,13 @@
+{
+  "artifact": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\independent.pt",
+  "sha256": "d7be4207384da21c181194380ae7abf8321600a42ef7e94bbbdc3fb3619903d9",
+  "manifest": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\independent.manifest.json",
+  "counts": {
+    "records": 600,
+    "skipped_empty_records": 0,
+    "skipped_batches_without_targets": 0,
+    "batches": 75,
+    "nonpadding_tokens": 39388,
+    "masked_targets": 5767
+  }
+}

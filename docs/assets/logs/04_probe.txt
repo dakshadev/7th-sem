@@ -1,0 +1,15 @@
+probing C:\Users\daksh\AppData\Local\hermes\cache\scratch\demo2\run-a\student.pt on cpu ...
+probing random-init baseline ...
+{
+  "run-a": {
+    "accuracy": 0.55,
+    "macro_f1": 0.5486201833276702,
+    "majority_baseline": 0.29
+  },
+  "random_baseline": {
+    "accuracy": 0.578,
+    "macro_f1": 0.576234120570505,
+    "majority_baseline": 0.29
+  }
+}
+wrote docs\assets\logs\04_probe.json

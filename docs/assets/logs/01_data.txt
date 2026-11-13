@@ -1,0 +1,13 @@
+{
+  "artifact": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\span.pt",
+  "sha256": "d4058c1c1e347ce097d5f48bbf0b90745c60f21ad79ee3563d5a4a0a47c50698",
+  "manifest": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\span.manifest.json",
+  "counts": {
+    "records": 600,
+    "skipped_empty_records": 0,
+    "skipped_batches_without_targets": 0,
+    "batches": 75,
+    "nonpadding_tokens": 39388,
+    "masked_targets": 5767
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "status": "measured",
+  "created_at": "2026-11-13T13:48:40.800119+00:00",
+  "code_commit": "b86bbd98acfe26555ce6c54933d66cd4eddd723f",
+  "student": {
+    "source": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-a\\student.pt",
+    "source_kind": "student_export",
+    "schema_version": 1,
+    "model_config": {
+      "vocab_size": 30522,
+      "max_length": 128,
+      "width": 256,
+      "layers": 4,
+      "heads": 4,
+      "ffn_width": 1024,
+      "dropout": 0.1,
+      "norm_first": true,
+      "pad_token_id": 0,
+      "special_token_ids": [
+        0,
+        101,
+        102,
+        103
+      ]
+    },
+    "device": "cpu",
+    "compatibility": {
+      "person1_export_key": "student",
+      "person2_loader_recognized_keys": [
+        "student_encoder",
+        "model",
+        "encoder"
+      ],
+      "requires_cross_branch_fix": true,
+      "note": "Person 2's load_student_checkpoint does not recognise Person 1's 'student' key. This bridge reads it directly and can emit a 'student_encoder' payload, but the cross-branch loader fix is still required."
+    }
+  },
+  "data": {
+    "tokenizer": "bert-base-uncased",
+    "kind": "datasets-streaming",
+    "dataset": "Salesforce/wikitext",
+    "config": "wikitext-103-raw-v1",
+    "split": "validation",
+    "requested_max_records": 200,
+    "seen_rows": 293,
+    "revision": "not_pinned_by_streaming_loader",
+    "records": 200
+  },
+  "evaluation": {
+    "mode": "frozen eval",
+    "gradients": "disabled",
+    "text_corruption": "none",
+    "pooling": "attention-mask-aware mean excluding padding and special tokens",
+    "special_token_ids": [
+      100,
+      102,
+      0,
+      101,
+      103
+    ],
+    "num_samples": 200,
+    "dimension": 256,
+    "nonpadding_tokens": 14816
+  },
+  "geometry": {
+    "is_degenerate": false,
+    "status": "healthy",
+    "num_samples": 200,
+    "dimension": 256,
+    "effective_rank_singular": 81.16488532932634,
+    "effective_rank_covariance": 4.040848828023714,
+    "rank_ratio": 0.4058244266466317,
+    "mean_dimension_variance": 0.1833471852092937,
+    "min_dimension_variance": 0.026356260791442026,
+    "max_dimension_variance": 1.2608698259064837,
+    "dead_dimension_count": 0,
+    "dead_dimension_fraction": 0.0,
+    "mean_pairwise_cosine": 0.14485736183390766,
+    "std_pairwise_cosine": 0.6844399062089154,
+    "min_pairwise_cosine": -0.9104808362703407,
+    "max_pairwise_cosine": 1.0,
+    "median_pairwise_cosine": 0.4129046379917555,
+    "p10_pairwise_cosine": -0.8464008603376757,
+    "p90_pairwise_cosine": 0.8461762890859514
+  },
+  "not_run": {
+    "linear_probe": "not_run: no labelled probe split was supplied",
+    "ag_news_probe": "not_run: no labelled probe split was supplied",
+    "token_geometry": "not_run: this bridge reports sentence geometry only",
+    "pretrained_bert_ambiguity": "not_run: optional analysis not implemented",
+    "gpu_benchmark": "not_run: no GPU throughput or memory benchmark was collected"
+  },
+  "limitations": [
+    "Geometry is computed on a bounded held-out sample, not the full corpus.",
+    "A random-init or short-pilot student is not evidence of useful transfer.",
+    "Person 2's src/evaluate.py and src/data.py must be present; this branch does not vendor them.",
+    "Person 2's load_student_checkpoint does not recognise Person 1's 'student' key. This bridge reads it directly and can emit a 'student_encoder' payload, but the cross-branch loader fix is still required."
+  ]
+}
