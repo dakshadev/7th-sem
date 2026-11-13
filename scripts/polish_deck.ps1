@@ -18,6 +18,17 @@ function Get-TitleShape($slide) {
 }
 
 # ---- outline slide: contents, with the repository link --------------------------------
+function Remove-RepoLinks($slide) {
+    # Re-running this script must not stack a second copy of the repository link on the slide.
+    for ($i = $slide.Shapes.Count; $i -ge 1; $i--) {
+        $shape = $slide.Shapes.Item($i)
+        if (-not $shape.HasTextFrame) { continue }
+        if (-not $shape.TextFrame.HasText) { continue }
+        if ($shape.TextFrame.TextRange.Text -like '*github.com/dakshadev/7th-sem*') { $shape.Delete() }
+    }
+}
+
+Remove-RepoLinks $pres.Slides.Item(2)
 $outline = $pres.Slides.Item(2)
 $body = $null
 foreach ($shape in $outline.Shapes) {
@@ -26,7 +37,8 @@ foreach ($shape in $outline.Shapes) {
 if ($null -eq $body) { throw 'outline body not found' }
 $body.TextFrame.TextRange.Text = ($payload.outline -join "`r`n")
 $body.TextFrame.TextRange.Font.Size = 13
-$link = $outline.Shapes.AddTextbox(1, 38, 452, 380, 20)
+# Sit the link below the list, not inside it: the balanced list can run to ~470pt.
+$link = $outline.Shapes.AddTextbox(1, 39.6, 496, 380, 20)
 $link.TextFrame.TextRange.Text = 'Repository: ' + $payload.repo
 $link.TextFrame.TextRange.Font.Size = 10
 $link.TextFrame.TextRange.ActionSettings.Item(1).Hyperlink.Address = $payload.repo
