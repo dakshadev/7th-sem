@@ -43,7 +43,9 @@ class ModelConfig:
     dropout: float = 0.1
     norm_first: bool = True
     pad_token_id: int = 0
-    special_token_ids: tuple[int, ...] = (0, 101, 102, 103)
+    # BERT's full special set: [PAD], [UNK], [CLS], [SEP], [MASK]. [UNK] must be here:
+    # predicting it is meaningless, and the resampler derives eligibility from this tuple.
+    special_token_ids: tuple[int, ...] = (0, 100, 101, 102, 103)
 
     def __post_init__(self) -> None:
         _positive_int(self.vocab_size, "vocab_size", 2)
@@ -112,6 +114,9 @@ class TeacherConfig:
     """
 
     ema_decay: float = 0.996
+    # Optional linear ramp to this decay across optimizer.max_updates. data2vec schedules
+    # 0.999 -> 0.9999; leaving it None keeps the constant decay used by the recorded runs.
+    ema_decay_end: float | None = None
     mode: Literal["ema", "self"] = "ema"
     # Target construction lives in ObjectiveConfig.target so component-wise ablations (D-G) can
     # vary the target without also changing masking, predictor or loss. This flag is now only a
@@ -125,6 +130,10 @@ class TeacherConfig:
             raise ValueError("teacher mode must be 'ema' or 'self'")
         if not 0 <= _finite_number(self.ema_decay, "ema_decay") < 1:
             raise ValueError("ema_decay must be in [0, 1)")
+        if self.ema_decay_end is not None:
+            end = _finite_number(self.ema_decay_end, "ema_decay_end")
+            if not 0 <= end < 1 or end < self.ema_decay:
+                raise ValueError("ema_decay_end must be in [0, 1) and at least ema_decay")
 
 
 @dataclass(frozen=True)
@@ -136,6 +145,15 @@ class MaskConfig:
     # Geometric mean span length, and the hard cap on any single span.
     span_length: int = 3
     max_span_length: int = 5
+    mask_token_id: int = 103
+    # 'mask' replaces every selected position with [MASK]. 'bert_80_10_10' uses BERT's
+    # 80% mask / 10% random token / 10% unchanged corruption, which blunts the
+    # train/evaluation mismatch; it has not been run at the recorded budgets.
+    corruption: Literal["mask", "bert_80_10_10"] = "mask"
+    # Rebuild masked_input_ids and prediction_mask per training batch instead of trusting
+    # the single realisation baked into the artifact. Off by default so old artifacts keep
+    # their recorded behaviour; new runs should enable it.
+    resample_in_loop: bool = False
 
     def __post_init__(self) -> None:
         if self.policy not in {"independent", "span"}:
@@ -144,6 +162,16 @@ class MaskConfig:
             raise ValueError("mask ratio must be in (0, 1)")
         _positive_int(self.span_length, "span_length")
         _positive_int(self.max_span_length, "max_span_length")
+        if (
+            isinstance(self.mask_token_id, bool)
+            or not isinstance(self.mask_token_id, int)
+            or self.mask_token_id < 0
+        ):
+            raise ValueError("mask_token_id must be a nonnegative integer")
+        if self.corruption not in {"mask", "bert_80_10_10"}:
+            raise ValueError("corruption must be 'mask' or 'bert_80_10_10'")
+        if not isinstance(self.resample_in_loop, bool):
+            raise ValueError("resample_in_loop must be boolean")
 
 
 @dataclass(frozen=True)

@@ -10,7 +10,9 @@
   "mask": {
     "policy": "independent",
     "ratio": 0.15,
-    "span_length": 3
+    "span_length": 3,
+    "max_span_length": 5,
+    "resample_in_loop": true
   },
   "run": {
     "seed": 17,

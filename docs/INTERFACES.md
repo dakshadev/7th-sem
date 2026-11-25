@@ -17,11 +17,13 @@ A dictionary of PyTorch tensors on CPU from the loader; the runner moves them to
 
 L=128 initially. prediction_mask must be false at padding and all tokenizer special-token positions. IDs must be within tokenizer vocabulary. MLM labels are derived from input_ids at prediction_mask; no second conflicting label source. A batch with no eligible targets must be safely skipped/reported or rejected, never produce NaN from empty reduction.
 
-Proposed simplest initial corruption: replace selected eligible positions with tokenizer.mask_token_id. Do not silently assume BERT 80/10/10 corruption. If another policy is selected, record it and use it consistently in matched comparisons. Mask ratio is approximately 15% of eligible positions. Person 2 must specify independent sampling versus fixed counts, span length/distribution and boundary handling. Evaluation masks must be deterministic; training uses controlled randomness.
+Corruption is a configured policy recorded in the batch manifest. `mask` replaces every selected position with `tokenizer.mask_token_id` (the project default and the policy behind every recorded result); `bert_80_10_10` applies BERT's 80% mask / 10% random token / 10% unchanged. Do not infer a policy from the tokenizer: read `manifest.masking.corruption`. Mask ratio is approximately 15% of eligible positions. Person 2 must specify independent sampling versus fixed counts, span length/distribution and boundary handling. Evaluation masks must be deterministic; training uses controlled randomness.
+
+Training masks may be resampled in the loop (`mask.resample_in_loop`), which rebuilds `masked_input_ids` and `prediction_mask` from `input_ids` per batch so two seeds do not share one realisation. When it is off, the artifact's masks are used as-is and a seed comparison bounds initialisation variance only. Record which mode produced a run.
 
 ## Data isolation
 
-Split before packing/tokenization boundaries can leak content. Prefer canonical source train/validation/test splits; train only on training material. Record dataset ID/config/revision, subset-selection procedure, tokenizer revision, document-boundary/packing policy, eligible-token counts and hashes. Report tokens processed with an explicit counting convention (nonpadding original student input tokens; separately log masked targets). For the pilot use deterministic truncation/padding within records/documents rather than silently joining splits or unrelated records.
+Split before packing/tokenization boundaries can leak content. Prefer canonical source train/validation/test splits; train only on training material. Record dataset ID/config/revision, subset-selection procedure, tokenizer revision, document-boundary/packing policy, example order (shuffled with its seed, or corpus order), eligible-token counts and hashes. Report tokens processed with an explicit counting convention (nonpadding original student input tokens; separately log masked targets). For the pilot use deterministic truncation/padding within records/documents rather than silently joining splits or unrelated records.
 
 ## Encoder contract
 

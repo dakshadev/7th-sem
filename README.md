@@ -30,10 +30,11 @@ negative ones) rather than only the best cell of the table.
 | **I** | A + Barlow auxiliary | off-diagonal correlation penalty, weight 0.01 | | | |
 | **J** | A, no teacher | targets from the student's own detached forward pass | | | |
 
-The teacher is a frozen EMA copy of the encoder (decay 0.996) whose targets are detached; EMA is
-applied after the optimizer step, so the teacher never receives gradients. `teacher.mode: "self"`
-removes the teacher network entirely (condition J), so "no EMA" means no second copy of the model
-rather than a decay of 1.
+The teacher is a frozen EMA copy of the encoder whose targets are detached; EMA is applied after
+the optimizer step, so the teacher never receives gradients. The checked-in configs ramp the
+decay 0.996 → 0.9999 across the run; the recorded runs used a constant 0.996.
+`teacher.mode: "self"` removes the teacher network entirely (condition J), so "no EMA" means no
+second copy of the model rather than a decay of 1.
 
 **H and I are anti-collapse auxiliaries, not reproductions.** VICReg and Barlow Twins are two-view
 methods whose statistics terms pair with an invariance term. Here the masked-latent loss supplies
@@ -51,7 +52,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **77 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **85 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -216,7 +217,7 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 77 passed, 2 skipped
+python -m pytest -q                       # 85 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_sweep.py --help        # budget sweep with a derived schedule

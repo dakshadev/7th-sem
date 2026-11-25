@@ -94,6 +94,8 @@ def _build_namespace(
         mask_ratio=config.mask.ratio if args.mask_ratio is None else args.mask_ratio,
         mean_span_length=config.mask.span_length,
         max_span_length=config.mask.max_span_length,
+        corruption=config.mask.corruption,
+        shuffle=True,
         max_records=args.max_records,
         batch_size=args.batch_size,
         seed=config.run.seed if args.seed is None else args.seed,
@@ -141,6 +143,11 @@ def run_pilot(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("batch artifact must be a trusted list of tensor dictionaries")
     sequence = StatefulBatchSequence(loaded)
     trainer = Trainer(config, device=config.run.device)
+    resampler = None
+    if config.mask.resample_in_loop:
+        from src.masking import MaskResampler
+
+        resampler = MaskResampler.from_config(config)
     if args.resume:
         state = trainer.load_checkpoint(args.resume)
         if state is not None:
@@ -161,6 +168,7 @@ def run_pilot(args: argparse.Namespace) -> dict[str, Any]:
         segment_updates=args.max_updates,
         data_state=sequence.state_dict,
         data_manifest=data_manifest,
+        remask=resampler,
     )
     student_path = output / "student.pt"
     trainer.export_student(student_path)
@@ -211,6 +219,15 @@ def run_pilot(args: argparse.Namespace) -> dict[str, Any]:
             "source": manifest.get("source"),
             "counts": manifest.get("counts"),
             "limitations": manifest.get("limitations"),
+        },
+        "masking": {
+            "policy": config.mask.policy,
+            "ratio": config.mask.ratio,
+            "corruption": config.mask.corruption,
+            "resample_in_loop": config.mask.resample_in_loop,
+            "mask_token_id": config.mask.mask_token_id,
+            "mean_span_length": config.mask.span_length,
+            "max_span_length": config.mask.max_span_length,
         },
         "not_run": {
             "validation": "not_run: no separate held-out validation split supplied",

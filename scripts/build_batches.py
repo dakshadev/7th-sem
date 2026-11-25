@@ -185,6 +185,8 @@ def make_batches(
     batch_size: int,
     mean_span_length: int = 3,
     max_span_length: int = 5,
+    corruption: str = "mask",
+    shuffle: bool = True,
 ) -> tuple[list[dict[str, torch.Tensor]], dict[str, int]]:
     if batch_size < 1:
         raise ValueError("batch size must be positive")
@@ -192,6 +194,12 @@ def make_batches(
         raise ValueError("max length must be at least 2")
     if seed < 0:
         raise ValueError("seed must be nonnegative")
+    if shuffle:
+        # Corpus order groups consecutive lines from the same article. Shuffle before
+        # chunking so every batch mixes documents; the mask generator stays separate.
+        order_generator = torch.Generator().manual_seed(seed + 1_000_003)
+        order = torch.randperm(len(texts), generator=order_generator).tolist()
+        texts = [texts[index] for index in order]
     generator = torch.Generator().manual_seed(seed)
     records: list[dict[str, torch.Tensor]] = []
     skipped_empty_records = 0
@@ -209,6 +217,7 @@ def make_batches(
                 generator=generator,
                 mean_span_length=mean_span_length,
                 max_span_length=max_span_length,
+                corruption=corruption,
             )
         )
     if not records:
@@ -308,6 +317,8 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("--policy must be 'independent' or 'span'")
     if args.mean_span_length < 1 or args.max_span_length < 1:
         raise ValueError("span lengths must be positive")
+    if args.corruption not in {"mask", "bert_80_10_10"}:
+        raise ValueError("--corruption must be 'mask' or 'bert_80_10_10'")
 
     data_module = import_data_module()
     tokenizer = data_module.get_bert_tokenizer(args.tokenizer)
@@ -325,6 +336,8 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
         batch_size=args.batch_size,
         mean_span_length=args.mean_span_length,
         max_span_length=args.max_span_length,
+        corruption=args.corruption,
+        shuffle=args.shuffle,
     )
 
     out = Path(args.out)
@@ -385,7 +398,11 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
             "mean_span_length": args.mean_span_length,
             "max_span_length": args.max_span_length,
             "sampler": "src.data.process_single_text",
-            "corruption": "replace selected positions with tokenizer.mask_token_id",
+            "corruption": args.corruption,
+        },
+        "shuffle": {
+            "enabled": args.shuffle,
+            "order_seed": args.seed + 1_000_003,
         },
         "counts": counts,
         "observed_masked_targets_per_input_token": (
@@ -425,6 +442,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--mask-ratio", type=float, default=0.15)
     parser.add_argument("--mean-span-length", type=int, default=3)
     parser.add_argument("--max-span-length", type=int, default=5)
+    parser.add_argument("--corruption", choices=("mask", "bert_80_10_10"), default="mask")
+    parser.add_argument("--shuffle", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max-records", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--seed", type=int, default=17)

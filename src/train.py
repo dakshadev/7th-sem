@@ -309,16 +309,24 @@ class Trainer:
         finally:
             _restore_rng(state)
 
+    def _current_ema_decay(self) -> float:
+        """Constant decay, or a linear ramp to ema_decay_end across max_updates."""
+        start = self.config.teacher.ema_decay
+        end = self.config.teacher.ema_decay_end
+        if end is None:
+            return start
+        progress = min(1.0, self.counters.updates / max(1, self.config.optimizer.max_updates))
+        return start + (end - start) * progress
+
     def _ema_update(self) -> None:
         if self.teacher is None:
             return
+        decay = self._current_ema_decay()
         with torch.no_grad():
             for teacher, student in zip(
                 self.teacher.parameters(), self.student.parameters(), strict=True
             ):
-                teacher.mul_(self.config.teacher.ema_decay).add_(
-                    student, alpha=1 - self.config.teacher.ema_decay
-                )
+                teacher.mul_(decay).add_(student, alpha=1 - decay)
         self.teacher.eval()
 
     def checkpoint_state(self, data_state: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -445,6 +453,17 @@ def metadata(config: ExperimentConfig, device: torch.device | None = None) -> di
         "cuda_available": torch.cuda.is_available(),
         "hardware": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",
         "precision": "fp32 (AMP unsupported by design)",
+        "teacher": {
+            "mode": config.teacher.mode,
+            "ema_decay": config.teacher.ema_decay,
+            "ema_decay_end": config.teacher.ema_decay_end,
+            "start_horizon_updates": _ema_horizon(config.teacher.ema_decay),
+            "end_horizon_updates": (
+                None
+                if config.teacher.ema_decay_end is None
+                else _ema_horizon(config.teacher.ema_decay_end)
+            ),
+        },
         "token_counting": "nonpadding original student input tokens; masked targets separately",
         "data_manifest": {"status": "absent"},
         "lifecycle": {"status": "running", "stop_reason": None},
@@ -476,6 +495,7 @@ def run_batches(
     segment_updates: int | None = None,
     data_state: Callable[[], Mapping[str, Any] | None] | None = None,
     data_manifest: Mapping[str, Any] | None = None,
+    remask: Callable[[Batch], Batch] | None = None,
 ) -> list[dict[str, Any]]:
     """Run a segment; budget checks happen before fetching the next training batch."""
     if segment_updates is not None and segment_updates <= 0:
@@ -516,6 +536,8 @@ def run_batches(
                     batch = next(iterator)
                 except StopIteration:
                     break
+                if remask is not None:
+                    batch = remask(batch)
                 _synchronize(trainer.device)
                 started = time.perf_counter()
                 result = trainer.step(batch)
@@ -596,6 +618,11 @@ def run_batches(
     )
     _atomic_json(metadata_path, record)
     return rows
+
+
+def _ema_horizon(decay: float) -> float | None:
+    """Mean lag d/(1-d) of an EMA with the given decay; None when decay is exactly 1."""
+    return None if decay >= 1 else decay / (1 - decay)
 
 
 def _artifact_manifest(path: Path) -> dict[str, Any]:

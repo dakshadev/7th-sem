@@ -324,6 +324,25 @@ def test_regulariser_changes_the_loss() -> None:
     )
 
 
+def test_scheduled_ema_reaches_the_end_decay() -> None:
+    from dataclasses import replace
+
+    cfg = config("latent_a")
+    cfg = replace(
+        cfg,
+        teacher=replace(cfg.teacher, ema_decay=0.5, ema_decay_end=0.9),
+        optimizer=replace(cfg.optimizer, max_updates=4),
+    )
+    trainer = Trainer(cfg)
+    assert trainer._current_ema_decay() == pytest.approx(0.5)
+    decays = []
+    for _ in range(4):
+        trainer.step(batch())
+        decays.append(trainer._current_ema_decay())
+    assert decays == sorted(decays)
+    assert decays[-1] == pytest.approx(0.9)
+
+
 def test_ema_teacher_still_updates() -> None:
     trainer = Trainer(config("latent_a"))
     assert trainer.teacher is not None

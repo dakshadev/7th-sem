@@ -46,6 +46,42 @@ def get_special_token_ids(tokenizer: PreTrainedTokenizerFast) -> set:
     return set(tokenizer.all_special_ids)
 
 
+def _apply_corruption(
+    input_ids: torch.Tensor,
+    prediction_mask: torch.Tensor,
+    mask_token_id: int,
+    corruption: str,
+    vocab_size: int | None,
+    generator: torch.Generator | None,
+) -> torch.Tensor:
+    """Replace selected positions according to the configured corruption policy.
+
+    'mask' is the project default: every selected position becomes [MASK].
+    'bert_80_10_10' follows BERT: 80% [MASK], 10% a uniformly random token, 10% the
+    original token. The prediction mask is unchanged either way, so the loss still
+    scores every selected position.
+    """
+    masked_input_ids = input_ids.clone()
+    if corruption == "mask":
+        masked_input_ids[prediction_mask] = mask_token_id
+        return masked_input_ids
+    if corruption != "bert_80_10_10":
+        raise ValueError(f"Unknown corruption policy: {corruption}")
+    if vocab_size is None or vocab_size < 1:
+        raise ValueError("bert_80_10_10 corruption requires a positive vocab_size")
+    count = int(prediction_mask.sum().item())
+    if count == 0:
+        return masked_input_ids
+    draw = torch.rand(count, generator=generator)
+    selected = input_ids[prediction_mask].clone()
+    selected[draw < 0.8] = mask_token_id
+    random_positions = (draw >= 0.8) & (draw < 0.9)
+    random_tokens = torch.randint(0, vocab_size, (count,), generator=generator)
+    selected[random_positions] = random_tokens[random_positions]
+    masked_input_ids[prediction_mask] = selected
+    return masked_input_ids
+
+
 def mask_tokens_independent(
     input_ids: torch.Tensor,
     eligible_mask: torch.Tensor,
@@ -53,6 +89,8 @@ def mask_tokens_independent(
     mask_token_id: int = 103,
     generator: torch.Generator | None = None,
     policy: str = "fixed_ratio",
+    corruption: str = "mask",
+    vocab_size: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Masks eligible positions independently.
@@ -105,7 +143,9 @@ def mask_tokens_independent(
 
     # Guard: prediction_mask must only be True where eligible_mask is True
     prediction_mask = prediction_mask & eligible_mask
-    masked_input_ids[prediction_mask] = mask_token_id
+    masked_input_ids = _apply_corruption(
+        input_ids, prediction_mask, mask_token_id, corruption, vocab_size, generator
+    )
 
     return masked_input_ids, prediction_mask
 
@@ -118,6 +158,8 @@ def mask_tokens_span(
     max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
     mask_token_id: int = 103,
     generator: torch.Generator | None = None,
+    corruption: str = "mask",
+    vocab_size: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Masks eligible positions using short contiguous spans (SpanBERT / Recipe A).
@@ -199,7 +241,9 @@ def mask_tokens_span(
 
     # Guard: strictly eligible
     prediction_mask = prediction_mask & eligible_mask
-    masked_input_ids[prediction_mask] = mask_token_id
+    masked_input_ids = _apply_corruption(
+        input_ids, prediction_mask, mask_token_id, corruption, vocab_size, generator
+    )
 
     return masked_input_ids, prediction_mask
 
@@ -214,6 +258,7 @@ def process_single_text(
     seed: int | None = None,
     mean_span_length: int = DEFAULT_MEAN_SPAN_LENGTH,
     max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
+    corruption: str = "mask",
 ) -> dict[str, torch.Tensor]:
     """
     Tokenizes a single text string, creates eligible mask, applies masking strategy,
@@ -258,6 +303,8 @@ def process_single_text(
             mask_ratio=mask_ratio,
             mask_token_id=tokenizer.mask_token_id,
             generator=generator,
+            corruption=corruption,
+            vocab_size=int(tokenizer.vocab_size),
         )
     elif mask_mode == "span":
         masked_input_ids, prediction_mask = mask_tokens_span(
@@ -268,6 +315,8 @@ def process_single_text(
             max_span_length=max_span_length,
             mask_token_id=tokenizer.mask_token_id,
             generator=generator,
+            corruption=corruption,
+            vocab_size=int(tokenizer.vocab_size),
         )
     else:
         raise ValueError(f"Unsupported mask_mode: {mask_mode}. Choose 'independent' or 'span'.")
@@ -304,6 +353,7 @@ class TextMaskingDataset(Dataset):
         seed: int | None = None,
         mean_span_length: int = DEFAULT_MEAN_SPAN_LENGTH,
         max_span_length: int = DEFAULT_MAX_SPAN_LENGTH,
+        corruption: str = "mask",
     ):
         self.texts = texts
         self.tokenizer = tokenizer
@@ -313,6 +363,7 @@ class TextMaskingDataset(Dataset):
         self.seed = seed
         self.mean_span_length = mean_span_length
         self.max_span_length = max_span_length
+        self.corruption = corruption
 
     def __len__(self) -> int:
         return len(self.texts)
@@ -334,6 +385,7 @@ class TextMaskingDataset(Dataset):
             generator=generator,
             mean_span_length=self.mean_span_length,
             max_span_length=self.max_span_length,
+            corruption=self.corruption,
         )
 
 
@@ -374,6 +426,7 @@ def create_dataloader(
     mask_mode: str = "independent",
     seed: int | None = None,
     num_workers: int = 0,
+    corruption: str = "mask",
 ) -> DataLoader:
     """
     Creates a DataLoader yielding batches strictly conforming to the contract.
@@ -385,6 +438,7 @@ def create_dataloader(
         mask_ratio=mask_ratio,
         mask_mode=mask_mode,
         seed=seed,
+        corruption=corruption,
     )
     return DataLoader(
         dataset,
@@ -485,6 +539,7 @@ def get_dataset_loaders(
     max_val_samples: int | None = None,
     num_workers: int = 0,
     tokenizer: PreTrainedTokenizerFast | None = None,
+    corruption: str = "mask",
 ) -> tuple[DataLoader, DataLoader, dict[str, Any]]:
     """
     Real dataset-loader entry point for pretraining and validation.
@@ -522,6 +577,7 @@ def get_dataset_loaders(
         mask_mode=mask_mode,
         seed=None,
         num_workers=num_workers,
+        corruption=corruption,
     )
 
     val_loader = create_dataloader(
@@ -534,6 +590,7 @@ def get_dataset_loaders(
         mask_mode=mask_mode,
         seed=seed,  # Deterministic validation masks
         num_workers=num_workers,
+        corruption=corruption,
     )
 
     manifest = {
@@ -546,6 +603,7 @@ def get_dataset_loaders(
         "max_length": max_length,
         "mask_ratio": mask_ratio,
         "mask_mode": mask_mode,
+        "corruption": corruption,
         "seed": seed,
     }
 
@@ -561,6 +619,8 @@ if __name__ == "__main__":
     parser.add_argument("--max-length", type=int, default=128, help="Sequence length cutoff")
     parser.add_argument("--mask-ratio", type=float, default=0.15, help="Proportion of eligible tokens to mask")
     parser.add_argument("--mask-mode", default="independent", choices=["independent", "span"], help="Masking mode")
+    parser.add_argument("--corruption", default="mask", choices=["mask", "bert_80_10_10"],
+                        help="Replacement policy at selected positions")
     parser.add_argument("--save-fixture", type=str, default=None, help="Optional path to save tiny batch tensor .pt")
     parser.add_argument("--inspect", action="store_true", help="Print inspection of first batch")
     args = parser.parse_args()
@@ -576,6 +636,7 @@ if __name__ == "__main__":
         max_train_samples=20,
         max_val_samples=10,
         tokenizer=tokenizer,
+        corruption=args.corruption,
     )
     print(f"Loaded train loader with {len(train_loader.dataset)} samples, val loader with {len(val_loader.dataset)} samples.")
     batch = next(iter(train_loader))

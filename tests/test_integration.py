@@ -90,8 +90,9 @@ def stub_process_single_text(
     generator: torch.Generator | None = None,
     mean_span_length: int = 3,
     max_span_length: int = 5,
+    corruption: str = "mask",
 ) -> dict[str, torch.Tensor]:
-    del mean_span_length, max_span_length
+    del mean_span_length, max_span_length, corruption
     encoded = tokenizer(text, max_length=max_length)
     input_ids = encoded["input_ids"][0]
     attention_mask = encoded["attention_mask"][0].bool()

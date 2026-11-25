@@ -89,6 +89,8 @@ def artifact_namespace(
         mask_ratio=config.mask.ratio,
         mean_span_length=config.mask.span_length,
         max_span_length=config.mask.max_span_length,
+        corruption=config.mask.corruption,
+        shuffle=True,
         max_records=args.max_records,
         batch_size=args.batch_size,
         seed=args.artifact_seed,
@@ -143,6 +145,11 @@ def train_one(
     )
     sequence = StatefulBatchSequence(batches)
     trainer = Trainer(scheduled, device=device)
+    resampler = None
+    if scheduled.mask.resample_in_loop:
+        from src.masking import MaskResampler
+
+        resampler = MaskResampler.from_config(scheduled)
     rows = run_batches(
         trainer,
         sequence,
@@ -155,6 +162,7 @@ def train_one(
             },
             "external": manifest,
         },
+        remask=resampler,
     )
     student = run_dir / "student.pt"
     trainer.export_student(student)
@@ -175,6 +183,11 @@ def train_one(
         "last_loss": measured[-1]["loss"] if measured else None,
         "seconds": round(trainer.counters.training_seconds, 3),
         "stop_reason": metadata.get("lifecycle", {}).get("stop_reason"),
+        "masking": {
+            "policy": scheduled.mask.policy,
+            "corruption": scheduled.mask.corruption,
+            "resample_in_loop": scheduled.mask.resample_in_loop,
+        },
         "config": str(config_path),
         "student": str(student),
     }

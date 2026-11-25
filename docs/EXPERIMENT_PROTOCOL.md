@@ -17,6 +17,8 @@ are tabulated at the end.
 
 Use the same backbone architecture, tokenizer, dataset selection and split; align initialization seeds where meaningful. Record differing heads/predictor costs and teacher overhead. Match data-token exposure first and report measured compute separately; do not claim equal compute from equal token counts. Shared optimizer schedule and settings should be explicit; deviations must be justified. A vs B changes multiple components, so it cannot isolate their causal effects.
 
+Shuffle example order before batching and resample masks in the training loop (`mask.resample_in_loop`); a fixed artifact order plus one baked mask realisation makes "two seeds" an initialisation-only comparison. Record the corruption policy, the shuffle seed and the EMA schedule. A constant EMA decay fixed across two run lengths changes the teacher horizon as a fraction of training, so report the horizon (`decay / (1 - decay)` in updates) or schedule the decay.
+
 A lower latent loss is not directly comparable to MLM cross-entropy. Plot separately by objective. Show step and token axes and distinguish training from validation. A short pilot cannot establish final superiority, universal collapse behavior or a confirmed research hypothesis.
 
 ## Minimum run manifest

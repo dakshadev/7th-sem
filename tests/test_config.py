@@ -214,6 +214,28 @@ def test_mask_config_validates_span_lengths() -> None:
         MaskConfig(max_span_length=0)
 
 
+def test_mask_and_ema_extensions_validate() -> None:
+    import pytest
+
+    from src.config import MaskConfig, TeacherConfig
+
+    assert MaskConfig().corruption == "mask"
+    assert MaskConfig(corruption="bert_80_10_10").corruption == "bert_80_10_10"
+    assert MaskConfig(resample_in_loop=True).resample_in_loop is True
+    with pytest.raises(ValueError, match="corruption"):
+        MaskConfig(corruption="other")  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match="mask_token_id"):
+        MaskConfig(mask_token_id=-1)
+    with pytest.raises(ValueError, match="resample_in_loop"):
+        MaskConfig(resample_in_loop="yes")  # type: ignore[arg-type]
+
+    assert TeacherConfig(ema_decay=0.9, ema_decay_end=0.99).ema_decay_end == 0.99
+    with pytest.raises(ValueError, match="ema_decay_end"):
+        TeacherConfig(ema_decay=0.9, ema_decay_end=0.8)
+    with pytest.raises(ValueError, match="ema_decay_end"):
+        TeacherConfig(ema_decay=0.9, ema_decay_end=1.0)
+
+
 def test_teacher_mode_validation() -> None:
     import pytest
 
