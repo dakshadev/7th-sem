@@ -51,7 +51,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **69 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **77 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -216,7 +216,7 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 69 passed, 2 skipped
+python -m pytest -q                       # 77 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_sweep.py --help        # budget sweep with a derived schedule

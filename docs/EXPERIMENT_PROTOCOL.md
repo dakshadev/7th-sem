@@ -30,6 +30,11 @@ Use GPU-hours only with an explicit convention (elapsed active training wall tim
 - Fixed held-out representation sample; unmasked frozen student; documented pooling and sample count.
 - Centered effective rank, per-dimension variance summaries and cosine distributions with degenerate-status reporting. Metrics need definitions and limits, not arbitrary success thresholds.
 - AG News frozen linear probe: train only classifier/preprocessing on training labels, report held-out accuracy and macro-F1. Avoid tuning on the final test set.
+- Probe splits are stratified and shuffled from the full split with a recorded seed. Head-of-split sampling (`--split-strategy head`) is retained only for comparison with the recorded runs; it produced a 1.53x class imbalance.
+- Report a TF-IDF (1-2 gram) + logistic-regression baseline on the identical splits. It is the lexical floor: without it, a frozen-probe number cannot distinguish "no semantic transfer" from "the probe cannot detect it on a topic task".
+- The random-init reference is a mean +/- sd band over at least 10 seeds, with the seed list recorded. A single random draw cannot support "no trained student beats random init".
+- Report the probe at every encoder layer (1-4) and for both mean and CLS pooling; the final-layer mean remains the headline comparable number.
+- Report trainable parameters and measured seconds/token beside accuracy. Equal token budgets are not equal compute: the MLM head is ~7.9M parameters and the latent runs add a second encoder forward.
 - Label incomplete probes as not run; never fill table cells with guessed values.
 - Two seeds are limited robustness evidence, not a strong basis for narrow confidence intervals. Report individual results and limitations.
 

@@ -214,6 +214,16 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
     variants = _parse_variants(args.variants)
     device = torch.device(resolve_device(args.device))
     output_root = Path(args.output)
+    probe_data = None
+    if args.probe:
+        from scripts.run_probe import load_splits
+
+        probe_data = load_splits(
+            train_limit=args.probe_train,
+            test_limit=args.probe_test,
+            seed=args.probe_seed,
+            strategy=args.probe_split_strategy,
+        )
 
     rows: list[dict[str, Any]] = []
     for variant in variants:
@@ -251,18 +261,19 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                     output_root=output_root,
                     config_path=config_path,
                 )
-                if args.probe:
+                if args.probe and probe_data is not None:
                     from scripts.run_probe import probe_student
 
                     probed = probe_student(
                         Path(row["student"]),
-                        train_limit=args.probe_train,
-                        test_limit=args.probe_test,
+                        train=probe_data[0],
+                        test=probe_data[1],
                         tokenizer_name=args.tokenizer,
                         max_length=config.model.max_length,
                         batch_size=args.probe_batch_size,
                         seed=args.probe_seed,
                         device=device,
+                        layer_grid=args.probe_layer_grid,
                     )
                     row["probe_accuracy"] = probed["accuracy"]
                     row["probe_macro_f1"] = probed["macro_f1"]
@@ -300,15 +311,18 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             "A bounded sweep is not evidence that one objective beats another at scale.",
         ],
     }
-    if args.probe and args.random_baseline:
+    if args.probe and probe_data is not None and args.random_baseline:
         from scripts.run_probe import random_baseline
 
         payload = torch.load(rows[0]["student"], map_location="cpu", weights_only=True)
         report["random_baseline"] = random_baseline(
-            train_limit=args.probe_train,
-            test_limit=args.probe_test,
+            train=probe_data[0],
+            test=probe_data[1],
             model_config=payload["model_config"],
-            seed=args.probe_seed,
+            seeds=list(range(args.probe_seed, args.probe_seed + args.baseline_seeds)),
+            tokenizer_name=args.tokenizer,
+            max_length=payload["model_config"].get("max_length", 128),
+            batch_size=args.probe_batch_size,
             device=device,
         )
     write_json_atomic(args.out, report)
@@ -342,10 +356,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--rebuild", action="store_true")
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--random-baseline", action="store_true")
+    parser.add_argument("--baseline-seeds", type=int, default=10)
     parser.add_argument("--probe-train", type=int, default=4000)
     parser.add_argument("--probe-test", type=int, default=1000)
     parser.add_argument("--probe-batch-size", type=int, default=32)
     parser.add_argument("--probe-seed", type=int, default=42)
+    parser.add_argument(
+        "--probe-split-strategy",
+        choices=("stratified", "head"),
+        default="stratified",
+    )
+    parser.add_argument(
+        "--probe-layer-grid",
+        action="store_true",
+        help="probe every layer and both poolings; off by default to keep sweeps fast",
+    )
     return parser
 
 
