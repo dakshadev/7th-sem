@@ -183,6 +183,8 @@ def make_batches(
     mask_ratio: float,
     seed: int,
     batch_size: int,
+    mean_span_length: int = 3,
+    max_span_length: int = 5,
 ) -> tuple[list[dict[str, torch.Tensor]], dict[str, int]]:
     if batch_size < 1:
         raise ValueError("batch size must be positive")
@@ -205,6 +207,8 @@ def make_batches(
                 mask_ratio=mask_ratio,
                 mask_mode=policy,
                 generator=generator,
+                mean_span_length=mean_span_length,
+                max_span_length=max_span_length,
             )
         )
     if not records:
@@ -302,6 +306,8 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("--mask-ratio must be in (0, 1)")
     if args.policy not in {"independent", "span"}:
         raise ValueError("--policy must be 'independent' or 'span'")
+    if args.mean_span_length < 1 or args.max_span_length < 1:
+        raise ValueError("span lengths must be positive")
 
     data_module = import_data_module()
     tokenizer = data_module.get_bert_tokenizer(args.tokenizer)
@@ -317,6 +323,8 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
         mask_ratio=args.mask_ratio,
         seed=args.seed,
         batch_size=args.batch_size,
+        mean_span_length=args.mean_span_length,
+        max_span_length=args.max_span_length,
     )
 
     out = Path(args.out)
@@ -374,6 +382,8 @@ def build_batches_from_args(args: argparse.Namespace) -> dict[str, Any]:
             "policy": args.policy,
             "ratio": args.mask_ratio,
             "seed": args.seed,
+            "mean_span_length": args.mean_span_length,
+            "max_span_length": args.max_span_length,
             "sampler": "src.data.process_single_text",
             "corruption": "replace selected positions with tokenizer.mask_token_id",
         },
@@ -413,6 +423,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-length", type=int, default=128)
     parser.add_argument("--policy", choices=("independent", "span"), default="independent")
     parser.add_argument("--mask-ratio", type=float, default=0.15)
+    parser.add_argument("--mean-span-length", type=int, default=3)
+    parser.add_argument("--max-span-length", type=int, default=5)
     parser.add_argument("--max-records", type=int, default=500)
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--seed", type=int, default=17)

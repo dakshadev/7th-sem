@@ -1,10 +1,10 @@
 """Bridge Person 1 student exports to Person 2's frozen geometry evaluation.
 
 Person 1 writes ``{"schema_version": 1, "model_config": ..., "student": ...}``.
-Person 2's current ``load_student_checkpoint`` only selects ``student_encoder``,
-``model`` or ``encoder``, so it does not recognise Person 1's ``"student"`` key.
-This module provides a read-only compatibility loader and a payload rewriter;
-it deliberately does not edit Person 2's file.
+``src/evaluate.py`` accepts ``student`` first, then ``student_encoder``, ``model``
+or ``encoder``, so both payload shapes load. This module remains a read-only
+loader for exports and nested training checkpoints, and a rewriter for callers
+that still expect the older ``student_encoder`` key.
 """
 
 from __future__ import annotations
@@ -28,11 +28,10 @@ from .config import ExperimentConfig
 from .model import SmallEncoder
 from .train import load_exported_student
 
-PERSON2_LOADER_KEYS = ("student_encoder", "model", "encoder")
+PERSON2_LOADER_KEYS = ("student", "student_encoder", "model", "encoder")
 COMPATIBILITY_NOTE = (
-    "Person 2's load_student_checkpoint does not recognise Person 1's 'student' key. "
-    "This bridge reads it directly and can emit a 'student_encoder' payload, but the "
-    "cross-branch loader fix is still required."
+    "src/evaluate.py accepts 'student' first, then 'student_encoder', 'model' and 'encoder'; "
+    "the student_encoder writer is retained only for older checkouts."
 )
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
 
@@ -137,7 +136,7 @@ def load_student_compat(
         "compatibility": {
             "person1_export_key": "student",
             "person2_loader_recognized_keys": list(PERSON2_LOADER_KEYS),
-            "requires_cross_branch_fix": True,
+            "requires_cross_branch_fix": False,
             "note": COMPATIBILITY_NOTE,
         },
     }
@@ -145,7 +144,7 @@ def load_student_compat(
 
 
 def person2_compatible_state(source: str | Path | dict[str, Any]) -> dict[str, Any]:
-    """Return a payload whose key is selected by Person 2's current loader."""
+    """Return a payload using the legacy ``student_encoder`` key, accepted by every loader."""
     payload, _ = _read_payload(source)
     _, model_config, student_state, _ = _extract_payload(payload)
     return {
@@ -326,7 +325,6 @@ def evaluate_student(
             "A random-init or short-pilot student is not evidence of useful transfer.",
             "Person 2's src/evaluate.py and src/data.py must be present; this branch "
             "does not vendor them.",
-            COMPATIBILITY_NOTE,
         ],
     }
 

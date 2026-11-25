@@ -3,7 +3,7 @@
 ## Bootstrap — 27 October 2026
 
 > **Reading this log:** entries are dated and kept as written. A test count or status line
-> inside an entry describes that date, not the current tree (the suite is now 55 passed,
+> inside an entry describes that date, not the current tree (the suite is now 64 passed,
 > 2 skipped; GPU runs exist). For the current state read README.md.
 > `docs/DEVELOPMENT_EVIDENCE.md` and `docs/PERSON1_FINAL_SUMMARY.md` were deleted on
 > 27 Oct 2026; entries below that cite them describe the state at the time.
@@ -129,10 +129,20 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Date / author / commit: 2026-10-27 / Person 1 / `5f20e6a`
 - Runtime: Kaggle committed kernel `dakshasubramanya/7th-sem-budget-sweep` (v3), GPU T4 x2, torch 2.11.0+cu128, ~50 minutes.
 - Design: 3 objectives × 2 seeds × 2 budgets on WikiText-103 (90k records, seq 128, batch 8, mask 0.15). `max_updates` derived from each budget (`budget/575`) so the linear schedule reaches zero in every run.
-- Training: 0.69M runs stop at 692,919 tokens / 1,217 updates; 5M runs at 5,000,623 tokens / 8,668 updates; all stop_reason `budget`.
+- Training: 0.69M runs stop at 692,919 tokens / 1,217 updates; 5M runs at 5,000,623 tokens / 8,668 updates. **Correction (25 Nov 2026):** the six 0.69M runs carry `stop_reason: "interrupted"` — they hit the update cap 7,081 tokens short of 700,000 — and only the 5M tier stops on `budget`. The earlier "all stop_reason `budget`" was wrong.
 - Probe (AG News, 4,000/1,000, seed 42, frozen): 0.69M → C 0.579/0.574, A 0.591/0.588, B 0.595/0.577. 5M → C 0.529/0.534, A 0.544/0.554, B 0.524/0.550. Random-init 0.632, majority 0.274.
 - Findings: (1) no condition beats the random-init encoder at either budget; (2) a 7× larger budget costs every condition 0.04–0.05 accuracy while training loss improves.
 - Hypothesis (not yet tested): longer training specialises the encoder to masked input while the probe consumes clean input.
 - Evidence: `results/person1/sweep_annealed.json`, `docs/figures/fig_budget.png`.
 - Superseded: `results/person1/sweep_pass1_no_annealing.json` — same sweep with `max_updates=40000` for both budgets, so neither schedule annealed. Do not cite as the budget comparison.
 - Bugs found and fixed in the kernel: (a) `run_probe.py` launched as a script puts `scripts/` on `sys.path`, so `import src` failed — `PYTHONPATH` now set per subprocess; (b) probe re-run was moved to a separate kernel (`7th-sem-probe-only`) that mounts the sweep output rather than retraining.
+
+## Audit follow-up — P0 corrections — 25 November 2026
+
+- Date / author / branch / commit: 25 Nov 2026 / audit follow-up / `audit/project-review` / commit containing this entry.
+- Implemented files: `docs/DATA_INTEGRITY.md`, `docs/PROGRESS.md`, `docs/PROJECT_CONTEXT.md`, `AGENTS.md`, `requirements.txt`, `src/evaluate_bridge.py`, `src/config.py`, `scripts/build_batches.py`, `scripts/run_pilot.py`, `scripts/run_sweep.py` (new), `notebooks/kaggle_sweep.ipynb` (new), `docs/COLAB_RUNBOOK.md`, `README.md`, `docs/assets/logs/05_geometry.json`, `docs/assets/logs/05_geometry.txt`, `tests/test_config.py`, `tests/test_integration.py`.
+- Exact command and environment: CPython 3.14 (Homebrew), torch 2.14.0, pytest 9.1.1, ruff 0.14.14, scikit-learn 1.9.1 installed in an isolated scratch venv; `HF_HUB_OFFLINE=1 python -m pytest -q`; `python -m ruff check src tests scripts`.
+- Actual test/integration outcome: **69 passed, 2 skipped** (CUDA-only resume test; person1-only bridge test). Ruff check clean. `ruff format --check` reports pre-existing deviations in 18 files; they were not reformatted to avoid unrelated churn.
+- What changed: (1) the 0.69M stopping claim in `DATA_INTEGRITY.md` and `PROGRESS.md` now reads `interrupted` at 692,919 tokens, 7,081 short, and attributes 700,482 to the correct pass; (2) the stale `"student"` compatibility note was corrected and the captured geometry log annotated rather than rewritten; (3) `requirements.txt` warns against GPU installs and pins `torch==2.9.1`, matching `pyproject.toml`; (4) `MaskConfig.max_span_length` was added and both span values now reach the masker and the artifact manifest; (5) `scripts/run_sweep.py` derives and records `max_updates` from the artifact — `derive_max_updates(700000, 575) == 1217` is unit-tested; (6) stale dates and the test count were corrected.
+- Known limitations: `scripts/run_sweep.py` reconstructs the recorded configuration, not bit-exact runs; the original Kaggle kernel remains unavailable. No GPU run was executed in this entry.
+- Next action: P1 probe redesign (multi-seed random baseline, TF-IDF lexical floor, stratified splits, per-layer by pooling probes, parameter and seconds table).

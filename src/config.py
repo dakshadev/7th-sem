@@ -133,7 +133,9 @@ class MaskConfig:
 
     policy: Literal["independent", "span"] = "independent"
     ratio: float = 0.15
+    # Geometric mean span length, and the hard cap on any single span.
     span_length: int = 3
+    max_span_length: int = 5
 
     def __post_init__(self) -> None:
         if self.policy not in {"independent", "span"}:
@@ -141,6 +143,7 @@ class MaskConfig:
         if not 0 < _finite_number(self.ratio, "mask ratio") < 1:
             raise ValueError("mask ratio must be in (0, 1)")
         _positive_int(self.span_length, "span_length")
+        _positive_int(self.max_span_length, "max_span_length")
 
 
 @dataclass(frozen=True)

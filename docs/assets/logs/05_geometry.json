@@ -3,6 +3,7 @@
   "status": "measured",
   "created_at": "2026-11-13T13:48:40.800119+00:00",
   "code_commit": "b86bbd98acfe26555ce6c54933d66cd4eddd723f",
+  "_correction": "The compatibility note in student.compatibility and the final limitations entry were captured before the loader fix. src/evaluate.py now accepts 'student' first, so that note is obsolete; the measured values below are unchanged.",
   "student": {
     "source": "C:\\Users\\daksh\\AppData\\Local\\hermes\\cache\\scratch\\demo2\\run-a\\student.pt",
     "source_kind": "student_export",

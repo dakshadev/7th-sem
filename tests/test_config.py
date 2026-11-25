@@ -201,6 +201,19 @@ def test_regulariser_config_validation() -> None:
     assert ExperimentConfig.from_dict(config.to_dict()).regulariser == settings
 
 
+def test_mask_config_validates_span_lengths() -> None:
+    import pytest
+
+    from src.config import MaskConfig
+
+    assert MaskConfig().max_span_length == 5
+    assert MaskConfig(span_length=4, max_span_length=6).max_span_length == 6
+    with pytest.raises(ValueError, match="span_length"):
+        MaskConfig(span_length=0)
+    with pytest.raises(ValueError, match="max_span_length"):
+        MaskConfig(max_span_length=0)
+
+
 def test_teacher_mode_validation() -> None:
     import pytest
 

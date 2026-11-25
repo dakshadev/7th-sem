@@ -222,13 +222,33 @@ python scripts/run_pilot.py \
 ```
 
 Repeat with `--seed 43` for the second seed, and with `--max-tokens 5000000` for the full-budget
-tier. Let the learning-rate schedule anneal to zero inside each run by deriving `max_updates`
-from the budget; a fixed cap confounds budget with schedule (see the superseded
-`results/person1/sweep_pass1_no_annealing.json`).
+tier. The learning-rate schedule must anneal to zero inside each run; a fixed cap confounds
+budget with schedule (see the superseded `results/person1/sweep_pass1_no_annealing.json`). Use
+`scripts/run_sweep.py` below, which derives and records `max_updates` for you.
 
 **Smoke path only:** `--max-updates 50` is a segment cap that stops a run after 50 updates
 regardless of tokens and leaves `stop_reason: interrupted`. Use it to prove the pipeline runs,
 never to produce a result.
+
+### Sweeping the grid with a derived schedule
+
+`scripts/run_sweep.py` does the derivation for you: it builds or reuses one manifested artifact
+per variant, sets `optimizer.max_updates = round(token_budget / tokens_per_update)` from the
+whole artifact's mean non-padding tokens per batch, records that value in each run's
+`metadata.json`, trains, and writes one sweep JSON.
+
+```bash
+python scripts/run_sweep.py \
+  --output "$ARTIFACTS/sweep" --out "$ARTIFACTS/sweep.json" \
+  --budgets 700000,5000000 --variants mlm,latent_a,latent_b --seeds 17,43 \
+  --max-records 90000 --batch-size 8 --device auto \
+  --probe --random-baseline
+```
+
+The recorded sweep used a fixed 575 tokens/update; pass `--tokens-per-update 575` to reproduce
+that arithmetic. A derived run can stop as `complete` where the recorded 0.69M tier stopped as
+`interrupted`, because the original also passed a segment cap of the same length.
+`notebooks/kaggle_sweep.ipynb` wraps this command for a free GPU runtime.
 
 Each output directory contains `metadata.json`, `metrics.jsonl`, `checkpoint.pt`, `student.pt`
 and `pilot.json`. All values in `pilot.json` are measured on that run; fields that were not

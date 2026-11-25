@@ -92,6 +92,8 @@ def _build_namespace(
         max_length=(args.max_length if args.max_length is not None else config.model.max_length),
         policy=config.mask.policy,
         mask_ratio=config.mask.ratio if args.mask_ratio is None else args.mask_ratio,
+        mean_span_length=config.mask.span_length,
+        max_span_length=config.mask.max_span_length,
         max_records=args.max_records,
         batch_size=args.batch_size,
         seed=config.run.seed if args.seed is None else args.seed,

@@ -51,7 +51,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **64 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **69 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -203,6 +203,7 @@ src/
 scripts/
   build_batches.py        # dataset → batch artifact + manifest
   run_pilot.py            # one bounded run with the real trainer
+  run_sweep.py            # budget sweep, schedule derived from the artifact
   run_probe.py            # frozen AG News linear probe
   ambiguity_analysis.py   # Objective 1, single-position masking
   build_midreview_deck.py # regenerates docs/mid-project-review.pptx from results/
@@ -215,9 +216,10 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 64 passed, 2 skipped
+python -m pytest -q                       # 69 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
+python scripts/run_sweep.py --help        # budget sweep with a derived schedule
 python scripts/run_probe.py --help        # frozen AG News probe
 python scripts/ambiguity_analysis.py --help
 python scripts/build_midreview_deck.py    # rebuild the deck from results/

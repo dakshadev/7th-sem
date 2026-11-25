@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 import torch
 
-from scripts import build_batches, run_pilot
+from scripts import build_batches, run_pilot, run_sweep
 from src.evaluate_bridge import (
     PERSON2_LOADER_KEYS,
     evaluate_geometry,
@@ -370,6 +370,154 @@ def test_build_batches_writes_contract_artifact_and_manifest(
         )
 
 
+def test_build_batches_forwards_span_lengths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MaskConfig.span_length/max_span_length must reach the masker, not just the config."""
+    install_person2_stubs(monkeypatch)
+    module = sys.modules["src.data"]
+    original = module.process_single_text
+    recorded: list[tuple[int, int]] = []
+
+    def recording(**kwargs: Any) -> dict[str, torch.Tensor]:
+        recorded.append((kwargs["mean_span_length"], kwargs["max_span_length"]))
+        return original(**kwargs)
+
+    module.process_single_text = recording
+    build_batches.main(
+        [
+            "--dataset",
+            "offline-build",
+            "--config-name",
+            "fixture",
+            "--split",
+            "train",
+            "--tokenizer",
+            "stub-tokenizer",
+            "--max-length",
+            "16",
+            "--policy",
+            "span",
+            "--mean-span-length",
+            "4",
+            "--max-span-length",
+            "6",
+            "--max-records",
+            "6",
+            "--batch-size",
+            "2",
+            "--seed",
+            "5",
+            "--out",
+            str(tmp_path / "span.pt"),
+            "--offline-fixture",
+            str(write_fixture(tmp_path)),
+        ]
+    )
+    assert recorded == [(4, 6)] * len(TEXTS)
+
+
+def write_sweep_config(config_dir: Path, variant: str = "mlm") -> Path:
+    source = write_tiny_config(config_dir, variant)
+    return source.rename(config_dir / ("mlm_c.json" if variant == "mlm" else f"{variant}.json"))
+
+
+def test_derive_max_updates_reproduces_the_recorded_low_tier() -> None:
+    assert run_sweep.derive_max_updates(700_000, 575) == 1_217
+    assert run_sweep.derive_max_updates(1, 10_000) == 1
+    with pytest.raises(ValueError, match="token budget"):
+        run_sweep.derive_max_updates(0, 575)
+    with pytest.raises(ValueError, match="tokens per update"):
+        run_sweep.derive_max_updates(100, 0)
+
+
+def test_sweep_derives_schedule_from_artifact_and_records_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_person2_stubs(monkeypatch)
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    write_sweep_config(config_dir, "mlm")
+    run_root = tmp_path / "runs"
+    report = run_sweep.main(
+        [
+            "--output",
+            str(run_root),
+            "--out",
+            str(tmp_path / "sweep.json"),
+            "--variants",
+            "mlm",
+            "--seeds",
+            "7",
+            "--budgets",
+            "1200",
+            "--config-dir",
+            str(config_dir),
+            "--offline-fixture",
+            str(write_fixture(tmp_path, TEXTS * 40)),
+            "--dataset",
+            "offline-sweep",
+            "--config-name",
+            "fixture",
+            "--split",
+            "train",
+            "--tokenizer",
+            "stub-tokenizer",
+            "--max-records",
+            "240",
+            "--batch-size",
+            "2",
+            "--artifact-seed",
+            "5",
+            "--device",
+            "cpu",
+        ]
+    )
+
+    assert report["schema_version"] == 1
+    assert len(report["runs"]) == 1
+    row = report["runs"][0]
+    artifact = run_root / "batches-C.pt"
+    assert artifact.is_file()
+    batches = torch.load(artifact, map_location="cpu", weights_only=True)
+    expected = sum(int(item["attention_mask"].sum().item()) for item in batches) / len(batches)
+    assert row["tokens_per_update"] == round(expected, 6)
+    assert row["tokens_per_update_source"] == "artifact"
+    assert row["max_updates"] == max(1, round(1200 / expected))
+    assert 1 <= row["updates"] <= row["max_updates"]
+    assert row["stop_reason"] in {"complete", "budget"}
+    assert row["last_loss"] is not None
+
+    metadata = json.loads((run_root / row["run"] / "metadata.json").read_text(encoding="utf-8"))
+    assert metadata["config"]["optimizer"]["max_updates"] == row["max_updates"]
+    assert metadata["config"]["run"]["token_budget"] == 1200
+    assert metadata["config"]["run"]["seed"] == 7
+    assert metadata["data_manifest"]["batch_artifact"]["sha256"]
+
+    written = json.loads((tmp_path / "sweep.json").read_text(encoding="utf-8"))
+    assert written == report
+    assert any("575" in item for item in report["limitations"])
+
+
+def test_sweep_rejects_unknown_variants(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    install_person2_stubs(monkeypatch)
+    with pytest.raises(SystemExit):
+        run_sweep.main(
+            [
+                "--output",
+                str(tmp_path / "runs"),
+                "--out",
+                str(tmp_path / "sweep.json"),
+                "--variants",
+                "not_a_condition",
+                "--offline-fixture",
+                str(write_fixture(tmp_path)),
+                "--device",
+                "cpu",
+            ]
+        )
+
+
 def test_build_batches_refuses_joined_splits(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -455,7 +603,7 @@ def test_bridge_loads_export_and_reports_geometry_and_degeneracy(
 
     _, export_info = load_student_compat(output / "student.pt")
     assert export_info["source_kind"] == "student_export"
-    assert "student" not in PERSON2_LOADER_KEYS
+    assert "student" in PERSON2_LOADER_KEYS
     _, checkpoint_info = load_student_compat(output / "checkpoint.pt")
     assert checkpoint_info["source_kind"] == "training_checkpoint"
     compatible = person2_compatible_state(output / "student.pt")

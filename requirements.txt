@@ -1,4 +1,10 @@
-torch>=2.0.0
+# CPU / local-development environment only.
+#
+# Do NOT install this file on a CUDA cloud runtime (Kaggle, Colab): it replaces the image's
+# CUDA torch build with a CPU wheel, and a CPU run can then be reported as a GPU run. Install
+# the other packages by name on those runtimes and leave torch as the runtime provides it.
+# The torch pin matches pyproject.toml; measured GPU runs used the runtime's 2.11.0+cu128.
+torch==2.9.1
 transformers>=4.40.0
 datasets>=2.18.0
 scikit-learn>=1.4.0

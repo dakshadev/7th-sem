@@ -17,8 +17,11 @@ field is authoritative and how much of a difference is signal.
 - **Reconciliation:** `pilot.measured.updates` equals the `metrics.jsonl` line count,
   `nonpadding_tokens` equals the sum of the log's per-step tokens, and
   `first/last_train_loss` equal the first and last logged losses — in all 12 runs.
-- **Stopping:** `stop_reason == "budget"` in all 12, with token counts within one batch of the
-  target (700,482 vs 700,000; 5,000,623 vs 5,000,000).
+- **Stopping:** the six 5M runs stop on `budget` at 5,000,623 tokens. The six 0.69M runs stop
+  on the update cap (`stop_reason: "interrupted"`) at 692,919 tokens / 1,217 updates — 7,081
+  tokens (1.0%, roughly 12 batches) short of the nominal 700,000. An earlier revision of this
+  file said "all 12" stopped on `budget` and cited 700,482; that figure belongs to
+  `kaggle_long_runs.json`, a different pass, not to this sweep.
 - **Transfer claim:** every student is below the random baseline, margins 0.039–0.107.
 - **Geometry coverage:** 12 `geom-*.json`, one per run, all `status: measured`,
   `is_degenerate: false`, same 300-sample evaluation set.
@@ -63,8 +66,10 @@ wrong reading.
 
 `probe-*.json: random_baseline.student_sha256` is `null`: the reference is a fresh random
 initialisation inside each probe run, so it is not reproducible from a saved artifact. It
-therefore drifts a little between runs — 0.632 in one probe file, 0.631 in another. Both are
-above every trained student, which is the claim we make; quote it as ≈0.63, not 0.632.
+therefore drifts a little between runs. Both probe files record 0.632; the 0.631 figure is in
+`sweep_pass1_no_annealing.json`, a superseded sweep file, not a probe file. Every recorded
+reference is above every trained student, which is the claim we make; quote it as ≈0.63, not
+0.632.
 
 ### 6. Identical weights, slightly different probe accuracy
 

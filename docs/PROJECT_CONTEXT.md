@@ -4,7 +4,7 @@
 
 Context was extracted from the user's pre-project deck, `Pre_Project_Presentation_TLP_Lab (2).pptx`; the original is not uploaded here. Deck title: **A Lightweight Self-Supervised Framework for Text Representation Learning Using Masked Latent Prediction**. Institution: MSRUAS, Department of CSE; guide: Dr. Prabadevi B; batch PB93. The deck lists three team members, but the user explicitly says **two people are now implementing**. Daksh is Person 1; Person 2's identity is not confirmed. Do not infer the active teammate from the deck.
 
-The implementation state is recorded in `docs/PROGRESS.md`, which is the authoritative log of what ran and what it measured; do not infer progress from this context file. Current planning date: 27 October 2026; mid-review date: 29 October 2026. A previous chat schedule incorrectly started on October 26: do not reuse it. No formal percentage-completion rubric is supplied; review template is not yet in this repository. Expect progress and remaining-work sections, not a completed thesis.
+The implementation state is recorded in `docs/PROGRESS.md`, which is the authoritative log of what ran and what it measured; do not infer progress from this context file. Planning date: 25 November 2026; the mid-review on 29 October 2026 has passed. A previous chat schedule incorrectly started on October 26: do not reuse it. No formal percentage-completion rubric is supplied; review template is not yet in this repository. Expect progress and remaining-work sections, not a completed thesis.
 
 ## Research question
 
