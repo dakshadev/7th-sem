@@ -1,0 +1,24 @@
+{
+  "objective": {
+    "kind": "mlm",
+    "label": "M",
+    "mlm_head_width": 64
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "independent",
+    "ratio": 0.15,
+    "span_length": 3,
+    "max_span_length": 5,
+    "resample_in_loop": true
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Control M: MLM with a factorised decoder (256 -> 64 -> 30522), bringing the trainable total to ~13.1M against A's 12.7M. Separates the objective from the 7.9M-parameter full head, which C carries and A does not."
+}

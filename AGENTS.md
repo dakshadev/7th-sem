@@ -7,7 +7,7 @@ docs/DATA_INTEGRITY.md and docs/PROGRESS.md, then the handoff matching the curre
 Inspect git status, branch, tracked files and recent commits first.
 
 `main` is the implemented tree, not a plan: the encoder, objectives, data pipeline, training
-loop, evaluation and tests exist, the suite is `85 passed, 2 skipped`, and results/ holds
+loop, evaluation and tests exist, the suite is `93 passed, 2 skipped`, and results/ holds
 measured runs. The docs describe that work. Still, run the suite before assuming a subsystem
 works (`python -m pytest -q`) and check docs/PROGRESS.md for the latest entry, which is the
 only place that records what was actually executed and when.

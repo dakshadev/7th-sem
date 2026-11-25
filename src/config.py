@@ -117,7 +117,10 @@ class TeacherConfig:
     # Optional linear ramp to this decay across optimizer.max_updates. data2vec schedules
     # 0.999 -> 0.9999; leaving it None keeps the constant decay used by the recorded runs.
     ema_decay_end: float | None = None
-    mode: Literal["ema", "self"] = "ema"
+    # 'ema' and 'self' are the real objectives. 'constant' (zero targets) and 'noise'
+    # (scale-matched Gaussian) are controls: if they degrade the probe as much as the real
+    # objective, the degradation is optimisation-induced, not caused by the target.
+    mode: Literal["ema", "self", "constant", "noise"] = "ema"
     # Target construction lives in ObjectiveConfig.target so component-wise ablations (D-G) can
     # vary the target without also changing masking, predictor or loss. This flag is now only a
     # cross-check: 'layernorm' is legal solely with the top2_normalized target.
@@ -126,8 +129,8 @@ class TeacherConfig:
     def __post_init__(self) -> None:
         if self.target_norm not in {"none", "layernorm"}:
             raise ValueError("teacher normalization must be 'none' or 'layernorm'")
-        if self.mode not in {"ema", "self"}:
-            raise ValueError("teacher mode must be 'ema' or 'self'")
+        if self.mode not in {"ema", "self", "constant", "noise"}:
+            raise ValueError("teacher mode must be 'ema', 'self', 'constant' or 'noise'")
         if not 0 <= _finite_number(self.ema_decay, "ema_decay") < 1:
             raise ValueError("ema_decay must be in [0, 1)")
         if self.ema_decay_end is not None:
@@ -240,6 +243,10 @@ class ObjectiveConfig:
     label: str = "C"
     smooth_l1_beta: float = 1.0
     predictor_dropout: float = 0.1
+    # Optional bottleneck for the MLM decoder (width -> bottleneck -> vocab). The full head
+    # is ~7.9M parameters against a 1.7M attention predictor and a 66k linear one, so a
+    # reduced head is the control that separates objective effects from head capacity.
+    mlm_head_width: int | None = None
     # Deprecated: a legacy recipe name that expands into the component fields below. Kept so
     # existing configs and callers keep working; new configs declare the components directly.
     variant: str = ""
@@ -269,6 +276,10 @@ class ObjectiveConfig:
             or not 0 <= _finite_number(self.predictor_dropout, "predictor_dropout") < 1
         ):
             raise ValueError("invalid objective settings")
+        if self.mlm_head_width is not None:
+            _positive_int(self.mlm_head_width, "mlm_head_width")
+            if self.kind != "mlm":
+                raise ValueError("mlm_head_width only applies to kind='mlm'")
 
 
 

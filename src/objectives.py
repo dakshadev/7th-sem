@@ -19,10 +19,17 @@ class LossResult:
 
 
 class MLMHead(nn.Module):
-    def __init__(self, width: int, vocab_size: int) -> None:
+    def __init__(self, width: int, vocab_size: int, bottleneck: int | None = None) -> None:
         super().__init__()
         self.transform = nn.Sequential(nn.Linear(width, width), nn.GELU(), nn.LayerNorm(width))
-        self.decoder = nn.Linear(width, vocab_size)
+        if bottleneck is None:
+            self.decoder: nn.Module = nn.Linear(width, vocab_size)
+        else:
+            self.decoder = nn.Sequential(
+                nn.Linear(width, bottleneck),
+                nn.GELU(),
+                nn.Linear(bottleneck, vocab_size),
+            )
 
     def forward(self, hidden_states: Tensor) -> Tensor:
         return self.decoder(self.transform(hidden_states))

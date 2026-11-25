@@ -1,0 +1,28 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "attention",
+    "loss": "mse",
+    "label": "K",
+    "predictor_dropout": 0.1
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "mode": "constant",
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3,
+    "max_span_length": 5,
+    "resample_in_loop": true
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Control K: recipe A with constant (zero) targets. No teacher network. If the probe falls as far as under the real objective, the degradation is optimisation-induced and says nothing about latent targets."
+}

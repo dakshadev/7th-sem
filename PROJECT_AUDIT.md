@@ -7,6 +7,11 @@
 executed (`python3 -m pytest`, a parameter-count pass over the real modules). Nothing is quoted
 from a document without checking the artifact it cites.
 
+**Implementation status (25 November 2026):** the P0-P3 code items in §4 are implemented on
+`audit/project-review`; the experiments they enable have not been run. `docs/PROGRESS.md`
+records each interval with its command and outcome, and `docs/EVIDENCE_TABLES.md` carries the
+parameter and measured-cost tables.
+
 **What was not inspected:** the Kaggle run trees, the Kaggle kernel source for
 `dakshasubramanya/7th-sem-budget-sweep` (v3) and `7th-sem-probe-only`, the `.pptx` / `.docx`
 artefacts, and `results/Multi_doc_compare/` (an empty directory). Several claims in

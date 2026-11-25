@@ -29,6 +29,9 @@ negative ones) rather than only the best cell of the table.
 | **H** | A + VICReg auxiliary | variance hinge on per-dimension std (0.1) and off-diagonal covariance (0.04) | | | |
 | **I** | A + Barlow auxiliary | off-diagonal correlation penalty, weight 0.01 | | | |
 | **J** | A, no teacher | targets from the student's own detached forward pass | | | |
+| **K** | control | constant (zero) targets, no teacher | attention | MSE | span |
+| **L** | control | Gaussian targets scaled to the student's own representation std, no teacher | attention | MSE | span |
+| **M** | control | MLM with a factorised head (256 → 64 → 30522), ~13.1M trainable vs C's ~18.9M | — | cross-entropy | independent |
 
 The teacher is a frozen EMA copy of the encoder whose targets are detached; EMA is applied after
 the optimizer step, so the teacher never receives gradients. The checked-in configs ramp the
@@ -52,7 +55,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **85 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **93 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -206,6 +209,7 @@ scripts/
   run_pilot.py            # one bounded run with the real trainer
   run_sweep.py            # budget sweep, schedule derived from the artifact
   run_probe.py            # frozen AG News linear probe
+  target_geometry.py      # rank and variance of the latent targets
   ambiguity_analysis.py   # Objective 1, single-position masking
   build_midreview_deck.py # regenerates docs/mid-project-review.pptx from results/
 tests/                    # unit + integration, split by subsystem
@@ -217,11 +221,12 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 85 passed, 2 skipped
+python -m pytest -q                       # 93 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_sweep.py --help        # budget sweep with a derived schedule
 python scripts/run_probe.py --help        # frozen AG News probe
+python scripts/target_geometry.py --help  # geometry of the latent targets
 python scripts/ambiguity_analysis.py --help
 python scripts/build_midreview_deck.py    # rebuild the deck from results/
 python scripts/build_synopsis.py          # rebuild the draft paper from results/

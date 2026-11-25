@@ -250,6 +250,21 @@ that arithmetic. A derived run can stop as `complete` where the recorded 0.69M t
 `interrupted`, because the original also passed a segment cap of the same length.
 `notebooks/kaggle_sweep.ipynb` wraps this command for a free GPU runtime.
 
+### Geometry of the latent targets
+
+Student geometry says whether the encoder collapsed; it does not say whether the teacher's
+targets are rich. Run the EMA teacher from a finished checkpoint over the same artifact:
+
+```bash
+python scripts/target_geometry.py \
+  --checkpoint "$ARTIFACTS/pilot-latent-a/checkpoint.pt" \
+  --batches "$ARTIFACTS/batches_span.pt" \
+  --max-batches 50 --device auto --out "$ARTIFACTS/target_geometry.json"
+```
+
+Only `ema` checkpoints carry a teacher; conditions J, K and L have no target network and the
+script exits with an error rather than inventing one.
+
 Each output directory contains `metadata.json`, `metrics.jsonl`, `checkpoint.pt`, `student.pt`
 and `pilot.json`. All values in `pilot.json` are measured on that run; fields that were not
 measured are `null` or explicitly listed under `not_run`. A bounded segment can leave

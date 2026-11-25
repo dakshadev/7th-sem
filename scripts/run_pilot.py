@@ -36,6 +36,9 @@ CONFIG_BY_VARIANT = {
     "latent_h_vicreg": "configs/latent_h_vicreg.json",
     "latent_i_barlow": "configs/latent_i_barlow.json",
     "latent_j_noema": "configs/latent_j_noema.json",
+    "latent_k_constant": "configs/latent_k_constant.json",
+    "latent_l_noise": "configs/latent_l_noise.json",
+    "mlm_m_small_head": "configs/mlm_m_small_head.json",
 }
 # CLI name -> the run label recorded in the config. Labels are what appear in results.
 VARIANT_LABEL = {
@@ -49,6 +52,9 @@ VARIANT_LABEL = {
     "latent_h_vicreg": "H",
     "latent_i_barlow": "I",
     "latent_j_noema": "J",
+    "latent_k_constant": "K",
+    "latent_l_noise": "L",
+    "mlm_m_small_head": "M",
 }
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
 

@@ -126,7 +126,11 @@ class Trainer:
         self.predictor: nn.Module | None = None
         self.teacher: SmallEncoder | None = None
         if config.objective.kind == "mlm":
-            self.mlm_head = MLMHead(config.model.width, config.model.vocab_size).to(self.device)
+            self.mlm_head = MLMHead(
+                config.model.width,
+                config.model.vocab_size,
+                config.objective.mlm_head_width,
+            ).to(self.device)
             modules: list[nn.Module] = [self.student, self.mlm_head]
         else:
             if config.teacher.mode == "ema":
@@ -196,8 +200,21 @@ class Trainer:
         mode the student's own forward pass does, detached: that is the ablation which tests
         whether the EMA teacher is doing any work.
         """
+        mode = self.config.teacher.mode
+        count = int(batch["prediction_mask"].sum().item())
+        device = batch["input_ids"].device
+        if mode == "constant":
+            return torch.zeros(count, self.config.model.width, device=device)
+        if mode == "noise":
+            with torch.no_grad():
+                reference = self.student(batch["input_ids"], batch["attention_mask"])
+                scale = reference.last_hidden_state[batch["prediction_mask"]].std()
+            noise = torch.randn(
+                count, self.config.model.width, device=device, dtype=scale.dtype
+            )
+            return (noise * scale).detach()
         want_hidden = self.config.objective.target == "top2_normalized"
-        if self.config.teacher.mode == "ema":
+        if mode == "ema":
             assert self.teacher is not None
             self.teacher.eval()
             with torch.no_grad():

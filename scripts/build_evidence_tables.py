@@ -35,6 +35,9 @@ CONFIG_FOR_LABEL = {
     "H": "configs/latent_h_vicreg.json",
     "I": "configs/latent_i_barlow.json",
     "J": "configs/latent_j_noema.json",
+    "K": "configs/latent_k_constant.json",
+    "L": "configs/latent_l_noise.json",
+    "M": "configs/mlm_m_small_head.json",
 }
 DEFAULT_RESULTS = (
     "results/person1/sweep_annealed.json",
