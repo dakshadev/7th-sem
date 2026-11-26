@@ -16,9 +16,12 @@ from typing import Any
 import numpy as np
 import torch
 import torch.nn as nn
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
-from sklearn.preprocessing import StandardScaler
+
+# sklearn is imported lazily inside the one function that needs it. It is a real runtime
+# dependency (declared in pyproject.toml), but importing it at module scope made EVERY
+# consumer of this module -- including the geometry metrics, which use only numpy -- fail to
+# import on an interpreter without sklearn, and took the whole test suite's collection down
+# with it. Keep the import where the dependency actually is.
 
 
 def masked_mean_pooling(
@@ -357,6 +360,10 @@ def evaluate_frozen_linear_probe(
     assert len(test_features) == len(test_labels), "Test features and labels length mismatch"
     assert len(train_features) > 0, "Empty train features"
     assert len(test_features) > 0, "Empty test features"
+
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.metrics import accuracy_score, f1_score
+    from sklearn.preprocessing import StandardScaler
 
     # Fit scaler strictly on train split
     scaler = StandardScaler()

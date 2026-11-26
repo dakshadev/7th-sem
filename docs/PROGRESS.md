@@ -3,7 +3,7 @@
 ## Bootstrap — 27 October 2026
 
 > **Reading this log:** entries are dated and kept as written. A test count or status line
-> inside an entry describes that date, not the current tree (the suite is now 64 passed,
+> inside an entry describes that date, not the current tree (the suite is now 97 passed,
 > 2 skipped; GPU runs exist). For the current state read README.md.
 > `docs/DEVELOPMENT_EVIDENCE.md` and `docs/PERSON1_FINAL_SUMMARY.md` were deleted on
 > 27 Oct 2026; entries below that cite them describe the state at the time.
@@ -176,3 +176,46 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - What changed: (1) `teacher.mode` now accepts `constant` (zero targets) and `noise` (Gaussian scaled to the student's own detached representation std); neither constructs a teacher network, so both are negative controls for the target signal. (2) `ObjectiveConfig.mlm_head_width` factorises the MLM decoder; condition M is C with a `256 -> 64 -> 30522` head, 2,066,682 parameters against the full head's 7,910,458, bringing M's trainable total to ~13.1M versus A's 12.7M. (3) `scripts/target_geometry.py` runs the EMA teacher over a manifested artifact and reports the same effective-rank, variance and cosine statistics on the target vectors at masked positions.
 - Known limitations: none of K, L or M has been run on real data; `target_geometry.py` refuses checkpoints without a teacher, so conditions J, K and L cannot be measured this way by construction.
 - Next action: run K, L and M at one budget with the redesigned probe, then scale the winning comparison; record the results before quoting any control effect.
+
+## Audit of the audit branch — correctness pass — 25 November 2026
+
+- Date / author / branch / commit: 25 Nov 2026 / audit follow-up / `audit/project-review` / commit containing this entry.
+- Exact command and environment: CPython 3.13 (system), torch 2.11.0, pytest 9.1.1, ruff 0.14.14; `python3 -m pytest -q`; `python3 -m ruff check src tests scripts`; `HF_HUB_OFFLINE=1 python3 scripts/run_sweep.py --budgets 2000 --variants latent_a,latent_k_constant,mlm_m_small_head --offline-fixture <fixture>`; `python3 scripts/run_pilot.py --variant latent_a --max-updates 3`.
+- Actual test/integration outcome: **97 passed, 2 skipped**; ruff clean; both runner entry points executed end to end on a local fixture and wrote a sweep JSON and a run directory.
+- Defects found and fixed in this pass:
+  1. **Checkpoints written on `main` could not resume.** `ModelConfig.special_token_ids` gained `[UNK]` (100), and `_resume_semantics` compared the whole config, so every existing checkpoint was rejected with "checkpoint config is incompatible with this trainer". Fixed: the comparison is now a whitelist of fields that change parameter shapes, after filling defaults, so post-hoc keys (`mask.max_span_length`, `teacher.ema_decay_end`) and eligibility-only fields no longer block a resume while a real architecture or objective mismatch still does. Covered by three new tests in `tests/test_training.py`.
+  2. **`scripts/run_sweep.py` aborted on any budget whose derived `max_updates` was below `warmup_updates`.** `OptimizerConfig` rejects `warmup_updates > max_updates`, so a small or smoke budget raised "optimizer learning rate and update counts must be valid" before training. Fixed by shortening the warm-up to fit; covered by a new test in `tests/test_integration.py`.
+  3. **The notebook cloned `main`, which has no `scripts/run_sweep.py`**, so the documented entry point failed on its first command. Pinned to the branch that contains it, with an assertion that fails loudly if the file is absent.
+  4. **Recipe A itself was silently changed.** `configs/latent_a.json` (and B, D-I) had gained `ema_decay_end: 0.9999` and `resample_in_loop: true`, so the file no longer identified the runs in `results/`, which used a constant 0.996 and artifact masks. Restored those nine configs to the recorded settings; the new training path is now a separate, explicitly named condition (`configs/latent_a2_v2.json`, `configs/mlm_c2_v2.json`, labels A2/C2, never run).
+  5. **`docs/EVIDENCE_TABLES.md` printed C's head for M**, defeating the head-capacity control, and omitted every unrun condition. The generator now honours `mlm_head_width`, emits a row for every configured condition with a "never run" marker, and counts runs across both result-file schemas while skipping the superseded pass.
+  6. Two wrong numbers: `docs/DATA_INTEGRITY.md` said margins were 0.039-0.107 (true range across files 0.025-0.108; annealed sweep alone 0.037-0.108), and the README's budget effect stated only the seed means without the per-cell spread. The stale test count in the `AGENTS.md` and `PROGRESS.md` banners was also updated.
+- Known limitations: no GPU run was executed; K, L, M and A2/C2 have not been run; the resampler's generator stream is still outside the checkpoint, so a resumed run draws fresh masks; `scripts/run_sweep.py` reconstructs the recorded configuration rather than reproducing it bit-exactly.
+- Next action: run the redesigned probe and the K/L/M controls on Kaggle, then A2/C2 at 5M x 2 seeds.
+
+### Environment defects found while running that suite — 25 November 2026
+
+Both are pre-existing on `main`; neither was introduced by this branch. They surfaced when a
+background `pytest` run picked a different interpreter (`/opt/homebrew/bin/python3`, 3.14.6)
+instead of the one with the dependencies, and died at collection.
+
+1. **`pyproject.toml` declared `requires-python = ">=3.12,<3.13"`.** No interpreter in use
+   satisfies that: local CPU work ran on 3.13.5 and the cloud runtimes on 3.14. So any
+   `pip install .` / `uv sync` refused to install on every machine that actually ran the code,
+   and the constraint described nothing real. Widened to `>=3.12`.
+2. **`pyproject.toml` declared only `torch`, and `src/evaluate.py` imported sklearn at module
+   scope.** transformers, datasets, scikit-learn, scipy and numpy are imported at module scope
+   by modules the tests and scripts use directly, so a clean install could not even collect the
+   suite. Fixed in two places: the five packages are now declared as runtime dependencies, and
+   the sklearn import moved inside `evaluate_frozen_linear_probe`, the one function that uses
+   it. Geometry metrics now work on a numpy-only interpreter; the probe fails at its own call
+   with a clear import error instead of taking the module down. Covered by
+   `test_evaluate_module_imports_without_sklearn`.
+3. `torch` is now range-pinned (`>=2.0.0`) rather than `==2.9.1` in both `pyproject.toml` and
+   `requirements.txt`, because a fixed wheel version resolves to the CPU build and replaces a
+   runtime's CUDA torch — the failure recorded in `docs/PERSON2_REVIEW.md` defect 2.
+
+- Actual test/integration outcome after these fixes: **98 passed, 2 skipped**; ruff clean; the
+  two previously-failing modules collect and run on an interpreter with no sklearn installed.
+- Next action: pin the interpreter in the documented commands (a `.python-version` or a venv
+  bootstrap in `docs/COLAB_RUNBOOK.md`) so a bare `python3` cannot silently select a bare
+  interpreter.

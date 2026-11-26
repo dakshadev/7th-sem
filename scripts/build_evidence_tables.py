@@ -38,6 +38,8 @@ CONFIG_FOR_LABEL = {
     "K": "configs/latent_k_constant.json",
     "L": "configs/latent_l_noise.json",
     "M": "configs/mlm_m_small_head.json",
+    "A2": "configs/latent_a2_v2.json",
+    "C2": "configs/mlm_c2_v2.json",
 }
 DEFAULT_RESULTS = (
     "results/person1/sweep_annealed.json",
@@ -55,11 +57,17 @@ def parameter_counts(label: str, root: Path | None = None) -> dict[str, Any]:
     config = load_config(base / CONFIG_FOR_LABEL[label])
     encoder = sum(item.numel() for item in SmallEncoder(config.model).parameters())
     if config.objective.kind == "mlm":
+        # Honour the configured bottleneck: M's head is not C's head, and reporting the full
+        # 7.9M for M would defeat the purpose of the control.
         head = sum(
             item.numel()
-            for item in MLMHead(config.model.width, config.model.vocab_size).parameters()
+            for item in MLMHead(
+                config.model.width,
+                config.model.vocab_size,
+                config.objective.mlm_head_width,
+            ).parameters()
         )
-        head_name = "MLMHead"
+        head_name = "MLMHead" if config.objective.mlm_head_width is None else "MLMHead(reduced)"
     elif config.objective.predictor == "attention":
         head = sum(
             item.numel()
@@ -82,6 +90,7 @@ def parameter_counts(label: str, root: Path | None = None) -> dict[str, Any]:
 
 
 def load_runs(paths: list[str], root: Path | None = None) -> list[dict[str, Any]]:
+    """Records that can populate the cost table: needs a budget, seconds and an accuracy."""
     base = root or repo_root()
     runs: list[dict[str, Any]] = []
     for name in paths:
@@ -89,8 +98,37 @@ def load_runs(paths: list[str], root: Path | None = None) -> list[dict[str, Any]
         if not path.is_file():
             continue
         payload = json.loads(path.read_text(encoding="utf-8"))
-        runs.extend(payload.get("runs", []))
+        if isinstance(payload.get("runs"), list):
+            runs.extend(payload["runs"])
     return runs
+
+
+def load_executed_labels(root: Path | None = None) -> dict[str, int]:
+    """Count every recorded run per condition, across both result-file schemas.
+
+    `kaggle_long_runs.json` predates the `runs` schema: it splits its records across `long`
+    and `ablations` and carries no probe numbers. Those records cannot enter the cost table,
+    but D-G did run there, so a "never run" marker must not be printed for them.
+
+    The superseded pass is skipped: `docs/DATA_INTEGRITY.md` forbids pooling across experiment
+    passes, and its four extra A/B/C runs would otherwise double those counts.
+    """
+    base = root or repo_root()
+    counts: dict[str, int] = {}
+    for path in sorted((base / "results" / "person1").glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(payload, dict) or payload.get("status", "").startswith("SUPERSEDED"):
+            continue
+        records = list(payload.get("runs") or [])
+        for section in ("long", "ablations"):
+            records.extend(payload.get(section) or [])
+        for item in records:
+            if not isinstance(item, dict):
+                continue
+            label = item.get("label")
+            if isinstance(label, str) and label:
+                counts[label] = counts.get(label, 0) + 1
+    return counts
 
 
 def mean(values: list[float]) -> float | None:
@@ -137,7 +175,13 @@ def _number(value: float | None, digits: int = 3) -> str:
 
 
 def render(runs: list[dict[str, Any]], labels: list[str]) -> str:
-    params = [parameter_counts(label) for label in labels if label in CONFIG_FOR_LABEL]
+    # Every configured condition gets a parameter row, whether or not it has a run: parameter
+    # counts are measured from the modules and need no execution. A condition with no runs is
+    # still useful here — M's whole purpose is its head size.
+    configured = sorted(CONFIG_FOR_LABEL)
+    measured = sorted({run["label"] for run in runs})
+    remaining = [name for name in configured if name not in measured]
+    params = [parameter_counts(label) for label in [*measured, *remaining]]
     cost = summarise_runs(runs)
     lines = [
         "# Parameter and measured-cost tables",
@@ -146,17 +190,23 @@ def render(runs: list[dict[str, Any]], labels: list[str]) -> str:
         "Parameter counts are measured from the real modules; seconds, tokens and probe",
         "accuracy are read from the sweep JSON; tokens/second and seed means are stated",
         "arithmetic over those fields. Cells with no measurement are marked, never filled.",
+        "The 'Runs recorded' column counts every recorded run of that condition across all",
+        "result files except the superseded pass, including the loss-only runs that carry no",
+        "probe number and therefore cannot appear in the cost table below.",
         "",
         "## Trainable parameters by condition",
         "",
         "| Condition | Encoder | Extra head | Extra head params | Trainable total "
-        "| Teacher forward |",
-        "|---|---|---|---|---|---|",
+        "| Teacher forward | Runs recorded |",
+        "|---|---|---|---|---|---|---|",
     ]
+    run_counts: dict[str, int] = load_executed_labels()
     for item in params:
+        count = run_counts.get(item["label"], 0)
         lines.append(
             f"| {item['label']} | {item['encoder']:,} | {item['head_name']} | {item['head']:,} "
-            f"| {item['total']:,} | {'yes' if item['teacher_forward'] else 'no'} |"
+            f"| {item['total']:,} | {'yes' if item['teacher_forward'] else 'no'} "
+            f"| {count if count else 'none — never run'} |"
         )
     lines.extend(
         [

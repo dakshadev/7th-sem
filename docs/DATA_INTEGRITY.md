@@ -22,7 +22,10 @@ field is authoritative and how much of a difference is signal.
   tokens (1.0%, roughly 12 batches) short of the nominal 700,000. An earlier revision of this
   file said "all 12" stopped on `budget` and cited 700,482; that figure belongs to
   `kaggle_long_runs.json`, a different pass, not to this sweep.
-- **Transfer claim:** every student is below the random baseline, margins 0.039–0.107.
+- **Transfer claim:** every student is below the random baseline. Across all result files the
+  margin runs 0.025–0.108 (0.025 is the narrowest cell, in `sweep_anticollapse.json`); the
+  `sweep_annealed.json` budget comparison alone spans 0.037–0.108. An earlier revision of this
+  line said "0.039–0.107", which matched neither range.
 - **Geometry coverage:** 12 `geom-*.json`, one per run, all `status: measured`,
   `is_degenerate: false`, same 300-sample evaluation set.
 

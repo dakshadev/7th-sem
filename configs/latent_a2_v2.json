@@ -1,0 +1,29 @@
+{
+  "objective": {
+    "kind": "latent",
+    "target": "final",
+    "predictor": "attention",
+    "loss": "mse",
+    "label": "A2",
+    "predictor_dropout": 0.1
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "ema_decay_end": 0.9999,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "span",
+    "ratio": 0.15,
+    "span_length": 3,
+    "max_span_length": 5,
+    "corruption": "mask",
+    "resample_in_loop": true
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "Recipe A v2: A with the P2 training-path fixes enabled — masks resampled every batch and the EMA decay ramped 0.996 -> 0.9999 across optimizer.max_updates. A itself stays at the recorded settings (constant 0.996, artifact masks) so configs/latent_a.json continues to identify the runs in results/. A2 is a new condition, not a re-interpretation of A; A2 has not been run."
+}

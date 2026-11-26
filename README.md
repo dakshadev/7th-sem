@@ -55,7 +55,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **93 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **97 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -114,8 +114,10 @@ Majority-class baseline: 0.274.
 1. **No trained student ever beats a randomly initialised encoder.** The best run reaches 0.595
    against 0.632 for the untrained model.
 2. **More pretraining makes transfer worse, not better.** A 7× larger budget costs every
-   condition 0.04–0.05 accuracy, while the training losses improve over the same range
-   (MLM 7.22 → 7.25, latent B 0.146 → 0.088).
+   condition 0.04–0.05 accuracy on the two-seed mean (C 0.045, A 0.041, B 0.049), while the
+   training losses improve over the same range (MLM 7.22 → 7.25, latent B 0.146 → 0.088).
+   Individual seed cells move by 0.027 to 0.071 — wider than the mean suggests, but every one
+   of the six degrades, and the anti-collapse sweep's six cells degrade by 0.013 to 0.047 too.
 
 **Does a collapse guard, or removing the teacher, fix it? No** (`results/person1/sweep_anticollapse.json`,
 same probe, same seeds, same batch artifacts as the sweep above):
@@ -221,7 +223,7 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 93 passed, 2 skipped
+python -m pytest -q                       # 97 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_sweep.py --help        # budget sweep with a derived schedule

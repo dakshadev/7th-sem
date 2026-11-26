@@ -405,14 +405,45 @@ class Trainer:
 
 
 def _resume_semantics(config: Any) -> Any:
-    """Runtime output location/device/checkpoint cadence may change across resume."""
+    """Reduce a config to the fields that actually determine checkpoint compatibility.
+
+    Two kinds of difference must NOT block a resume, and both have caused one:
+
+    1. Runtime knobs — device, output directory, checkpoint cadence.
+    2. Fields added after a checkpoint was written, or eligibility/policy settings that change
+       no tensor shape. A config written before ``mask.max_span_length`` or
+       ``teacher.ema_decay_end`` existed would otherwise be rejected for missing a key, and
+       ``model.special_token_ids`` is an eligibility rule, not architecture: widening it (as
+       the ``[UNK]`` fix did) leaves every parameter shape unchanged.
+
+    So the comparison is a whitelist of structural fields, after filling defaults through
+    ``ExperimentConfig``. Fields that change a parameter shape or the meaning of the stored
+    optimiser state stay in the whitelist; everything else is ignored.
+    """
     if not isinstance(config, dict):
         return config
-    value = json.loads(json.dumps(config))
-    if isinstance(value.get("run"), dict):
-        for key in ("device", "output_dir", "checkpoint_every_updates"):
-            value["run"].pop(key, None)
-    return value
+    value: dict[str, Any] = json.loads(json.dumps(config))
+    try:
+        # Fill any key added after this checkpoint was written.
+        value = ExperimentConfig.from_dict(value).to_dict()
+    except (ValueError, TypeError):
+        # An unparseable legacy config is compared as stored, so a genuine mismatch still fails.
+        pass
+    model = value.get("model") or {}
+    objective = value.get("objective") or {}
+    teacher = value.get("teacher") or {}
+    return {
+        "schema_version": value.get("schema_version", 1),
+        "model": {
+            key: model.get(key)
+            for key in ("vocab_size", "max_length", "width", "layers", "heads", "ffn_width")
+        },
+        "objective": {
+            key: objective.get(key)
+            for key in ("kind", "target", "predictor", "loss", "mlm_head_width")
+        },
+        "teacher_mode": teacher.get("mode"),
+    }
 
 
 def load_exported_student(path: str | Path, device: str | torch.device = "cpu") -> SmallEncoder:

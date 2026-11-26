@@ -2,9 +2,24 @@
 name = "masked-latent-text"
 version = "0.1.0"
 description = "Small, from-scratch masked latent text representation experiments"
-requires-python = ">=3.12,<3.13"
+# 3.13 is what the recorded CPU work actually ran on (3.13.5 locally, 3.14 on the cloud
+# runtimes). The previous cap `<3.13` described no interpreter in use, so `pip install .`
+# refused to install on every machine that had one.
+requires-python = ">=3.12"
 dependencies = [
-  "torch==2.9.1",
+  # torch is NOT pinned here on purpose. The CUDA build must come from the runtime image
+  # (PyTorch index or Kaggle/Colab base), and a wheel-version pin in `dependencies` would
+  # replace it with the CPU build -- the exact failure documented in docs/PERSON2_REVIEW.md
+  # defect 2. See requirements.txt and docs/EXECUTION_ENVIRONMENT.md.
+  "torch>=2.0.0",
+  # Imported at module scope by src/data.py, src/evaluate.py, src/masked.py and the probe,
+  # so they are runtime dependencies, not optional extras. Omitting them made a clean
+  # install unable to even collect the test suite.
+  "transformers>=4.40.0",
+  "datasets>=2.18.0",
+  "scikit-learn>=1.4.0",
+  "scipy>=1.12.0",
+  "numpy>=1.26.0",
 ]
 
 [build-system]

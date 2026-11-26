@@ -1,0 +1,24 @@
+{
+  "objective": {
+    "kind": "mlm",
+    "label": "C2"
+  },
+  "teacher": {
+    "ema_decay": 0.996,
+    "target_norm": "none"
+  },
+  "mask": {
+    "policy": "independent",
+    "ratio": 0.15,
+    "span_length": 3,
+    "max_span_length": 5,
+    "corruption": "mask",
+    "resample_in_loop": true
+  },
+  "run": {
+    "seed": 17,
+    "token_budget": 5000000,
+    "device": "cpu"
+  },
+  "_note": "MLM control v2: C with masks resampled every batch. C itself keeps the recorded settings so configs/mlm_c.json continues to identify the runs in results/. C2 has not been run. Use this pair with A2 to compare objectives on the new training path; comparing A2 against C would confound the path change with the objective."
+}

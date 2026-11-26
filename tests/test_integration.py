@@ -646,3 +646,45 @@ def test_bridge_fails_clearly_without_person2_evaluate(
     monkeypatch.delitem(sys.modules, "src.evaluate", raising=False)
     with pytest.raises(RuntimeError, match="src/evaluate.py"):
         geometry_from_embeddings(torch.randn(4, 4))
+
+
+def test_sweep_shortens_warmup_when_a_small_budget_derives_fewer_updates(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tiny budget must not fail on warmup_updates > max_updates.
+
+    OptimizerConfig rejects a warm-up longer than the schedule. Deriving max_updates from a
+    small budget produced a schedule of a few updates against the config's default warm-up of
+    100, and the whole sweep aborted. The runner now shortens the warm-up to fit.
+    """
+    install_person2_stubs(monkeypatch)
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    write_sweep_config(config_dir, "mlm")
+    run_root = tmp_path / "runs"
+    report = run_sweep.main(
+        [
+            "--output", str(run_root),
+            "--out", str(tmp_path / "sweep.json"),
+            "--variants", "mlm",
+            "--seeds", "7",
+            "--budgets", "40",
+            "--config-dir", str(config_dir),
+            "--offline-fixture", str(write_fixture(tmp_path, TEXTS * 40)),
+            "--dataset", "offline-sweep",
+            "--config-name", "fixture",
+            "--split", "train",
+            "--tokenizer", "stub-tokenizer",
+            "--max-records", "240",
+            "--batch-size", "2",
+            "--artifact-seed", "5",
+            "--device", "cpu",
+        ]
+    )
+    row = report["runs"][0]
+    assert row["max_updates"] >= 1
+    metadata = json.loads(
+        (run_root / row["run"] / "metadata.json").read_text(encoding="utf-8")
+    )
+    optimizer = metadata["config"]["optimizer"]
+    assert optimizer["warmup_updates"] <= optimizer["max_updates"]

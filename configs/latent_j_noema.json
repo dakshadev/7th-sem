@@ -15,9 +15,7 @@
   "mask": {
     "policy": "span",
     "ratio": 0.15,
-    "span_length": 3,
-    "max_span_length": 5,
-    "resample_in_loop": true
+    "span_length": 3
   },
   "run": {
     "seed": 17,

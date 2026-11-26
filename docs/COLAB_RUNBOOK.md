@@ -5,10 +5,22 @@ Kaggle T4 runs were executed on 27 October 2026. The measured numbers are in
 the procedure for reproducing and extending them, not a pending plan. Do not mark a checkbox,
 table cell or result as complete until the command actually ran and its output was captured.
 
-The project pins Python `>=3.12,<3.13` and `torch==2.9.1` in `pyproject.toml` for local CPU
-work. Person 2's `requirements.txt` documents `transformers`, `datasets`, `scikit-learn`,
-`scipy`, `numpy`, `matplotlib` and `pytest` bounds. Do not invent a different CUDA build
-locally.
+The project requires Python `>=3.12` (`pyproject.toml`). There is no upper cap: the recorded
+local CPU work ran 3.13.5 and the cloud runtimes ran 3.14, so a `<3.13` bound described no
+interpreter in use and made `pip install .` refuse on every machine that ran the code. `torch`
+is range-pinned (`>=2.0.0`), never version-pinned, so an install cannot replace a runtime's
+CUDA build with a CPU wheel — see `requirements.txt` and `docs/PERSON2_REVIEW.md` defect 2.
+`transformers`, `datasets`, `scikit-learn`, `scipy` and `numpy` are declared runtime
+dependencies in `pyproject.toml`; `matplotlib` and `pytest` remain in `requirements.txt`.
+
+Because a bare `python3` may resolve to an interpreter with none of those installed (that
+happened, and `pytest` died at collection), always run the commands below through an
+interpreter you have checked:
+
+```bash
+python -c "import sys, torch, transformers, datasets, sklearn; print(sys.version); print(torch.__version__)"
+python -c "import src.data, src.evaluate; print('Person 2 modules present')"
+```
 
 ## 0. Prerequisite: Person 2's modules must be present
 
@@ -72,12 +84,13 @@ python --version
 python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
 ```
 
-The project requires Python 3.12. If the runtime reports a different minor version, stop and
-select a compatible image rather than silently relaxing `requires-python`.
+The project requires Python `>=3.12` and has no upper cap. GPU runtimes shipped 3.14 and
+completed the recorded runs on it, so a runtime reporting 3.13 or 3.14 is fine; check the
+dependency import below rather than the minor version number.
 
-Use the CUDA build the image already ships. Never install the CPU pin (`torch==2.9.1` from
-`pyproject.toml`, or `torch` from `requirements.txt`) on a GPU image: it replaces the
-accelerated build with a CPU wheel and every later step silently runs on CPU.
+Use the CUDA build the image already ships. Never install `torch` from `requirements.txt` on a
+GPU image: it replaces the accelerated build with a CPU wheel and every later step silently
+runs on CPU. `pyproject.toml` no longer version-pins torch for exactly this reason.
 
 ```bash
 python -c "import torch; assert torch.cuda.is_available(), 'CUDA build missing; fix the image, do not pip install torch'"
@@ -94,10 +107,12 @@ pip install "transformers>=4.40.0" "datasets>=2.18.0" "scikit-learn>=1.4.0" \
   "scipy>=1.12.0" "numpy>=1.26.0" "matplotlib>=3.8.0"
 ```
 
-Local CPU development keeps the CPU-only wheel and is **not** the cloud path:
+Local CPU development keeps the CPU-only wheel and is **not** the cloud path. Do not pin a
+version: `--index-url .../cpu` is what selects the CPU build, and a version pin here is what
+previously leaked into the GPU path.
 
 ```bash
-uv pip install --python .venv/Scripts/python.exe "torch==2.9.1" \
+uv pip install --python .venv/bin/python torch \
   --index-url https://download.pytorch.org/whl/cpu
 ```
 
@@ -108,7 +123,7 @@ cd /content/7th-sem
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 python -m pytest -q
 ```
 
-Expect **55 passed, 2 skipped**. One skip is the CUDA-only resume test, the other is an
+Expect **98 passed, 2 skipped**. One skip is the CUDA-only resume test, the other is an
 integration-only test. On a working CUDA runtime the resume test should execute, so record the
 real output rather than assuming a count.
 

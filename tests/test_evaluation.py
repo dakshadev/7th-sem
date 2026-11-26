@@ -6,6 +6,7 @@ Deterministic CPU unit tests with synthetic fixtures and no network calls.
 """
 
 import numpy as np
+import pytest
 import torch
 import torch.nn as nn
 
@@ -232,3 +233,26 @@ def test_frozen_linear_probe_train_only_scaling():
     # Since data is well-separated, probe should achieve high accuracy
     assert results["accuracy"] >= 0.9
     assert results["macro_f1"] >= 0.9
+
+
+def test_evaluate_module_imports_without_sklearn(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Geometry must be usable on an interpreter that has no sklearn.
+
+    sklearn is imported lazily inside evaluate_frozen_linear_probe. A module-scope import made
+    every consumer of src.evaluate -- including the numpy-only geometry metrics -- fail to
+    import, which broke test collection entirely on such an interpreter.
+    """
+    import importlib
+    import sys
+
+    import src.evaluate as evaluate_module
+
+    for name in list(sys.modules):
+        if name == "sklearn" or name.startswith("sklearn."):
+            monkeypatch.delitem(sys.modules, name, raising=False)
+
+    reloaded = importlib.reload(evaluate_module)
+    result = reloaded.compute_representation_geometry(np.random.RandomState(0).randn(20, 8))
+    assert result["is_degenerate"] is False
+    assert "sklearn" not in sys.modules, "sklearn was imported at module scope"
+    importlib.reload(evaluate_module)

@@ -12,6 +12,18 @@ from a document without checking the artifact it cites.
 records each interval with its command and outcome, and `docs/EVIDENCE_TABLES.md` carries the
 parameter and measured-cost tables.
 
+**Audit of that branch (added after the implementations landed).** Reviewing the implementation
+found six defects, now fixed and recorded under "Audit of the audit branch" in
+`docs/PROGRESS.md`. Two were regressions that would have blocked work: every checkpoint written
+on `main` refused to resume (the `[UNK]` eligibility fix changed `special_token_ids`, and the
+resume check compared whole configs), and `scripts/run_sweep.py` aborted whenever a budget
+derived fewer updates than the configured warm-up. Three were provenance or correctness
+problems: `configs/latent_a.json` had been altered so it no longer identified the runs in
+`results/`, the notebook cloned a branch without the runner it calls, and the evidence tables
+printed C's head size for M. One was a wrong number: the transfer-margin range in
+`docs/DATA_INTEGRITY.md`. Findings 3.1.1-3.1.5, 3.2 and 3.3.3 in the body of this document
+remain accurate as descriptions of `main`; the fixes for them are visible in the branch diff.
+
 **What was not inspected:** the Kaggle run trees, the Kaggle kernel source for
 `dakshasubramanya/7th-sem-budget-sweep` (v3) and `7th-sem-probe-only`, the `.pptx` / `.docx`
 artefacts, and `results/Multi_doc_compare/` (an empty directory). Several claims in

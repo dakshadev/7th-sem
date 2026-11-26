@@ -140,8 +140,15 @@ def train_one(
         device=str(device),
         output_dir=str(run_dir),
     )
+    # A small budget can derive fewer updates than the configured warm-up, and
+    # OptimizerConfig rejects warmup_updates > max_updates. Shorten the warm-up to fit rather
+    # than failing: a schedule shorter than its own warm-up cannot be represented, and a
+    # bounded smoke budget is a legitimate use of this script.
+    warmup = min(config.optimizer.warmup_updates, max(0, max_updates - 1))
     scheduled = replace(
-        config, run=run, optimizer=replace(config.optimizer, max_updates=max_updates)
+        config,
+        run=run,
+        optimizer=replace(config.optimizer, max_updates=max_updates, warmup_updates=warmup),
     )
     sequence = StatefulBatchSequence(batches)
     trainer = Trainer(scheduled, device=device)
@@ -319,8 +326,16 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             "Derived runs reconstruct the recorded configuration, not bit-exact replicas.",
             "The recorded sweep used a fixed 575 tokens/update and a segment cap; a derived "
             "run may stop as 'complete' where the recorded low tier stopped as 'interrupted'.",
-            "Two seeds bound initialisation variance only when the artifact is reused, "
-            "because the mask realisation and batch order are fixed.",
+            (
+                "Two seeds vary initialisation, batch order and mask draws: the artifact is "
+                "shuffled once per variant and masks are resampled per batch from a "
+                "run-seeded generator."
+                if any(row["masking"]["resample_in_loop"] for row in rows)
+                else "Two seeds bound initialisation variance only: the mask realisation and "
+                "batch order are fixed by the reused artifact."
+            ),
+            "The batch sequence makes one pass over the artifact. A budget longer than the "
+            "artifact is truncated at stream end, not wrapped, so 'budget' is not reached.",
             "A bounded sweep is not evidence that one objective beats another at scale.",
         ],
     }

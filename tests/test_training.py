@@ -354,3 +354,55 @@ def test_ema_teacher_still_updates() -> None:
         not torch.equal(old, new) for old, new in zip(before, after, strict=True)
     ), "EMA teacher did not move away from its initial student copy"
     assert all(torch.isfinite(new).all() for new in after)
+
+
+def test_resume_accepts_a_checkpoint_written_before_new_config_fields(tmp_path: Path) -> None:
+    """A config lacking post-hoc keys, or an older special-token set, must still resume.
+
+    The [UNK] eligibility fix widened model.special_token_ids and the P2 work added
+    mask.max_span_length / teacher.ema_decay_end. None of those change a parameter shape, so a
+    checkpoint written before them must load instead of being rejected as incompatible.
+    """
+    cfg = config("latent_a")
+    trainer = Trainer(cfg)
+    trainer.step(batch())
+    state = trainer.checkpoint_state()
+    legacy = json.loads(json.dumps(state["config"]))
+    legacy["model"]["special_token_ids"] = [0, 101, 102, 103]
+    for section, keys in (
+        ("mask", ("max_span_length", "mask_token_id", "corruption", "resample_in_loop")),
+        ("teacher", ("ema_decay_end",)),
+    ):
+        for key in keys:
+            legacy[section].pop(key, None)
+    state["config"] = legacy
+    path = tmp_path / "legacy.pt"
+    torch.save(state, path)
+
+    resumed = Trainer(cfg)
+    resumed.load_checkpoint(path)
+    for key, value in trainer.student.state_dict().items():
+        assert torch.equal(resumed.student.state_dict()[key], value)
+
+
+def test_resume_still_rejects_a_different_architecture(tmp_path: Path) -> None:
+    """The compatibility check must not become so permissive that it accepts a real mismatch."""
+    cfg = config("latent_a")
+    trainer = Trainer(cfg)
+    state = trainer.checkpoint_state()
+    state["config"]["model"]["width"] = cfg.model.width + 16
+    path = tmp_path / "wrong.pt"
+    torch.save(state, path)
+    with pytest.raises(ValueError, match="incompatible"):
+        Trainer(cfg).load_checkpoint(path)
+
+
+def test_resume_still_rejects_a_different_objective(tmp_path: Path) -> None:
+    cfg = config("latent_a")
+    trainer = Trainer(cfg)
+    state = trainer.checkpoint_state()
+    state["config"]["objective"]["kind"] = "mlm"
+    path = tmp_path / "wrong_objective.pt"
+    torch.save(state, path)
+    with pytest.raises(ValueError, match="incompatible"):
+        Trainer(cfg).load_checkpoint(path)

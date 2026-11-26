@@ -39,6 +39,10 @@ CONFIG_BY_VARIANT = {
     "latent_k_constant": "configs/latent_k_constant.json",
     "latent_l_noise": "configs/latent_l_noise.json",
     "mlm_m_small_head": "configs/mlm_m_small_head.json",
+    # v2 conditions: the P2 training path (resampled masks, ramped EMA). The unsuffixed
+    # configs above keep the recorded settings so their files stay traceable to results/.
+    "latent_a2_v2": "configs/latent_a2_v2.json",
+    "mlm_c2_v2": "configs/mlm_c2_v2.json",
 }
 # CLI name -> the run label recorded in the config. Labels are what appear in results.
 VARIANT_LABEL = {
@@ -55,6 +59,8 @@ VARIANT_LABEL = {
     "latent_k_constant": "K",
     "latent_l_noise": "L",
     "mlm_m_small_head": "M",
+    "latent_a2_v2": "A2",
+    "mlm_c2_v2": "C2",
 }
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
 
