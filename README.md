@@ -33,9 +33,14 @@ negative ones) rather than only the best cell of the table.
 | **L** | control | Gaussian targets scaled to the student's own representation std, no teacher | attention | MSE | span |
 | **M** | control | MLM with a factorised head (256 → 64 → 30522), ~13.1M trainable vs C's ~18.9M | — | cross-entropy | independent |
 
+**A2, B2 and C2 are the same recipes on the fixed training path** — masks resampled per batch
+and the EMA decay ramped 0.996 → 0.9999. They are separate conditions, not a redefinition of
+A/B/C: `configs/latent_a.json` and friends keep the recorded settings so their files stay
+traceable to `results/`. A2/B2/C2 have not been run.
+
 The teacher is a frozen EMA copy of the encoder whose targets are detached; EMA is applied after
-the optimizer step, so the teacher never receives gradients. The checked-in configs ramp the
-decay 0.996 → 0.9999 across the run; the recorded runs used a constant 0.996.
+the optimizer step, so the teacher never receives gradients. The new-path configs A2/B2/C2 ramp
+the decay 0.996 → 0.9999; `configs/latent_a.json` and the recorded runs keep a constant 0.996.
 `teacher.mode: "self"` removes the teacher network entirely (condition J), so "no EMA" means no
 second copy of the model rather than a decay of 1.
 
@@ -55,7 +60,7 @@ against VICReg's ~0.08; equal nominal weights would let it contribute about seve
 | Data pipeline, independent + span masking, corpus statistics | Implemented (Person 2) |
 | Geometry metrics (effective rank), frozen linear probe, ambiguity analysis | Implemented, run |
 | Checkpoint save/resume with exact state parity, standalone student export | Implemented, tested |
-| Automated tests | **98 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
+| Automated tests | **104 passed, 2 skipped** (CUDA-only, plus an integration-only skip) |
 | Lint | `ruff check src tests scripts` clean |
 
 **New to the project?** Read [docs/PROJECT_EXPLAINED.pdf](docs/PROJECT_EXPLAINED.pdf) first — eight
@@ -223,7 +228,7 @@ docs/                     # protocol, interfaces, reviews, runbook, deck
 
 ```bash
 git clone https://github.com/dakshadev/7th-sem.git && cd 7th-sem
-python -m pytest -q                       # 98 passed, 2 skipped
+python -m pytest -q                       # 104 passed, 2 skipped
 python scripts/build_batches.py --help    # dataset → batch artifact + manifest
 python scripts/run_pilot.py --help        # one bounded pilot
 python scripts/run_sweep.py --help        # budget sweep with a derived schedule

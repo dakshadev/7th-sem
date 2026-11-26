@@ -23,7 +23,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import sys
+import time
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -197,6 +200,7 @@ def train_one(
         },
         "config": str(config_path),
         "student": str(student),
+        "reused": False,
     }
 
 
@@ -220,6 +224,108 @@ def _parse_variants(text: str) -> list[str]:
     if unknown:
         raise ValueError(f"unknown variants {unknown}; choose from {sorted(CONFIG_BY_VARIANT)}")
     return values
+
+
+def preflight(args: argparse.Namespace, output_root: Path, device: torch.device) -> dict[str, Any]:
+    """Fail before spending GPU time, and record what was checked.
+
+    Deliberately narrow: it checks the things that have actually broken a session — a missing
+    or changed artifact, a full disk, a device that is not there — rather than pretending to
+    verify the network.
+    """
+    output_root.mkdir(parents=True, exist_ok=True)
+    if not os.access(output_root, os.W_OK):
+        raise ValueError(f"output directory {output_root} is not writable")
+    free_bytes = shutil.disk_usage(output_root).free
+    if free_bytes < args.min_free_bytes:
+        raise ValueError(
+            f"only {free_bytes / 1e9:.1f} GB free under {output_root}; "
+            f"--min-free-bytes is {args.min_free_bytes / 1e9:.1f} GB"
+        )
+    memory_bytes: int | None = None
+    if hasattr(os, "sysconf"):
+        try:
+            memory_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
+        except (ValueError, OSError):
+            memory_bytes = None
+    if memory_bytes is not None and memory_bytes < args.min_free_bytes:
+        raise ValueError(
+            f"only {memory_bytes / 1e9:.1f} GB total RAM; the artifact must be held in memory"
+        )
+    if device.type == "cuda" and not torch.cuda.is_available():
+        raise ValueError("CUDA requested but unavailable")
+    return {
+        "free_disk_bytes": int(free_bytes),
+        "total_memory_bytes": memory_bytes,
+        "device": str(device),
+        "cuda_available": torch.cuda.is_available(),
+    }
+
+
+def completed_row(
+    run_dir: Path,
+    *,
+    label: str,
+    seed: int,
+    budget: int,
+    max_updates: int,
+    per_update: float,
+    per_update_source: str,
+    artifact_path: Path,
+    config_path: Path,
+) -> dict[str, Any] | None:
+    """Reconstruct the report row for a run that already finished, or None if it must re-run.
+
+    A resume is only safe when the recorded config, the derived schedule and the artifact hash
+    all match; anything else could silently mix two different experiments in one report.
+    """
+    metadata_path = run_dir / "metadata.json"
+    metrics_path = run_dir / "metrics.jsonl"
+    student = run_dir / "student.pt"
+    if not (metadata_path.is_file() and metrics_path.is_file() and student.is_file()):
+        return None
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    if metadata.get("lifecycle", {}).get("status") != "completed":
+        return None
+    config = metadata.get("config", {})
+    run = config.get("run", {})
+    optimizer = config.get("optimizer", {})
+    if run.get("seed") != seed or run.get("token_budget") != budget:
+        return None
+    if optimizer.get("max_updates") != max_updates:
+        return None
+    recorded = metadata.get("data_manifest", {}).get("batch_artifact", {}).get("sha256")
+    if recorded != sha256_file(artifact_path):
+        return None
+
+    rows = [json.loads(line) for line in metrics_path.read_text(encoding="utf-8").splitlines()]
+    measured = [row for row in rows if row.get("split") == "train" and row.get("updated")]
+    counters = metadata.get("counters", {})
+    mask = config.get("mask", {})
+    return {
+        "run": run_dir.name,
+        "label": label,
+        "seed": seed,
+        "budget_tokens": budget,
+        "max_updates": max_updates,
+        "tokens_per_update": round(per_update, 6),
+        "tokens_per_update_source": per_update_source,
+        "updates": counters.get("updates"),
+        "nonpadding_tokens": counters.get("nonpadding_tokens"),
+        "masked_targets": counters.get("masked_targets"),
+        "first_loss": measured[0]["loss"] if measured else None,
+        "last_loss": measured[-1]["loss"] if measured else None,
+        "seconds": round(float(counters.get("training_seconds", 0.0)), 3),
+        "stop_reason": metadata.get("lifecycle", {}).get("stop_reason"),
+        "masking": {
+            "policy": mask.get("policy"),
+            "corruption": mask.get("corruption"),
+            "resample_in_loop": mask.get("resample_in_loop"),
+        },
+        "config": str(config_path),
+        "student": str(student),
+        "reused": True,
+    }
 
 
 def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
@@ -246,6 +352,48 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
         )
 
     rows: list[dict[str, Any]] = []
+    started = time.perf_counter()
+    report: dict[str, Any] = {
+        "schema_version": 1,
+        "experiment": "budget sweep with the learning-rate schedule derived from the artifact",
+        "created_at": datetime.now(UTC).isoformat(),
+        "design": {
+            "budgets": budgets,
+            "variants": variants,
+            "seeds": seeds,
+            "resume": bool(args.resume),
+            "max_seconds": args.max_seconds,
+            "tokens_per_update": (
+                "cli override" if args.tokens_per_update else "artifact mean, whole artifact"
+            ),
+            "artifact_policy": "one artifact per variant, reused across seeds and budgets",
+            "corpus": {
+                "dataset": args.dataset,
+                "config": args.config_name,
+                "split": args.split,
+                "max_records": args.max_records,
+                "batch_size": args.batch_size,
+                "artifact_seed": args.artifact_seed,
+            },
+        },
+        "preflight": preflight(args, output_root, device),
+        "runs": rows,
+        "limitations": [
+            "Derived runs reconstruct the recorded configuration, not bit-exact replicas.",
+            "The recorded sweep used a fixed 575 tokens/update and a segment cap; a derived "
+            "run may stop as 'complete' where the recorded low tier stopped as 'interrupted'.",
+            "Seeds always vary initialisation. Whether they also vary mask draws and batch "
+            "order depends on mask.resample_in_loop and the artifact shuffle, both recorded "
+            "per run.",
+            "The batch sequence makes one pass over the artifact. A budget longer than the "
+            "artifact is truncated at stream end, not wrapped, so 'budget' is not reached.",
+            "A bounded sweep is not evidence that one objective beats another at scale.",
+        ],
+    }
+    # Written before the first run and after every run: a dead session loses at most the run
+    # in flight, never the report.
+    write_json_atomic(args.out, report)
+
     for variant in variants:
         config_path = config_path_for(args, variant)
         config = load_config(config_path)
@@ -268,19 +416,46 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             source = "cli"
         for seed in seeds:
             for budget in budgets:
-                row = train_one(
-                    config=config,
-                    seed=seed,
-                    budget=budget,
-                    per_update=per_update,
-                    per_update_source=source,
-                    batches=loaded,
-                    artifact_path=artifact_path,
-                    manifest=manifest,
-                    device=device,
-                    output_root=output_root,
-                    config_path=config_path,
+                if (
+                    args.max_seconds is not None
+                    and time.perf_counter() - started > args.max_seconds
+                ):
+                    report["stopped_reason"] = "max_seconds"
+                    write_json_atomic(args.out, report)
+                    return report
+                max_updates = derive_max_updates(budget, per_update)
+                run_dir = output_root / (
+                    f"b{budget}-s{seed}-{config.objective.label.lower()}"
                 )
+                row = None
+                if args.resume:
+                    row = completed_row(
+                        run_dir,
+                        label=config.objective.label,
+                        seed=seed,
+                        budget=budget,
+                        max_updates=max_updates,
+                        per_update=per_update,
+                        per_update_source=source,
+                        artifact_path=artifact_path,
+                        config_path=config_path,
+                    )
+                if row is None:
+                    row = train_one(
+                        config=config,
+                        seed=seed,
+                        budget=budget,
+                        per_update=per_update,
+                        per_update_source=source,
+                        batches=loaded,
+                        artifact_path=artifact_path,
+                        manifest=manifest,
+                        device=device,
+                        output_root=output_root,
+                        config_path=config_path,
+                    )
+                else:
+                    print(json.dumps({"reused": row["run"]}), flush=True)
                 if args.probe and probe_data is not None:
                     from scripts.run_probe import probe_student
 
@@ -294,52 +469,16 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
                         seed=args.probe_seed,
                         device=device,
                         layer_grid=args.probe_layer_grid,
+                        input_corruption=args.probe_input_corruption,
                     )
                     row["probe_accuracy"] = probed["accuracy"]
                     row["probe_macro_f1"] = probed["macro_f1"]
+                    row["probe_input_corruption"] = args.probe_input_corruption
                 rows.append(row)
+                write_json_atomic(args.out, report)
                 print(json.dumps({key: row[key] for key in ("run", "updates", "last_loss")}))
 
-    report: dict[str, Any] = {
-        "schema_version": 1,
-        "experiment": "budget sweep with the learning-rate schedule derived from the artifact",
-        "created_at": datetime.now(UTC).isoformat(),
-        "design": {
-            "budgets": budgets,
-            "variants": variants,
-            "seeds": seeds,
-            "tokens_per_update": (
-                "cli override" if args.tokens_per_update else "artifact mean, whole artifact"
-            ),
-            "artifact_policy": "one artifact per variant, reused across seeds and budgets",
-            "corpus": {
-                "dataset": args.dataset,
-                "config": args.config_name,
-                "split": args.split,
-                "max_records": args.max_records,
-                "batch_size": args.batch_size,
-                "artifact_seed": args.artifact_seed,
-            },
-        },
-        "runs": rows,
-        "limitations": [
-            "Derived runs reconstruct the recorded configuration, not bit-exact replicas.",
-            "The recorded sweep used a fixed 575 tokens/update and a segment cap; a derived "
-            "run may stop as 'complete' where the recorded low tier stopped as 'interrupted'.",
-            (
-                "Two seeds vary initialisation, batch order and mask draws: the artifact is "
-                "shuffled once per variant and masks are resampled per batch from a "
-                "run-seeded generator."
-                if any(row["masking"]["resample_in_loop"] for row in rows)
-                else "Two seeds bound initialisation variance only: the mask realisation and "
-                "batch order are fixed by the reused artifact."
-            ),
-            "The batch sequence makes one pass over the artifact. A budget longer than the "
-            "artifact is truncated at stream end, not wrapped, so 'budget' is not reached.",
-            "A bounded sweep is not evidence that one objective beats another at scale.",
-        ],
-    }
-    if args.probe and probe_data is not None and args.random_baseline:
+    if args.probe and probe_data is not None and args.random_baseline and rows:
         from scripts.run_probe import random_baseline
 
         payload = torch.load(rows[0]["student"], map_location="cpu", weights_only=True)
@@ -352,6 +491,7 @@ def run_sweep(args: argparse.Namespace) -> dict[str, Any]:
             max_length=payload["model_config"].get("max_length", 128),
             batch_size=args.probe_batch_size,
             device=device,
+            input_corruption=args.probe_input_corruption,
         )
     write_json_atomic(args.out, report)
     return report
@@ -382,6 +522,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--artifact-seed", type=int, default=17)
     parser.add_argument("--offline-fixture")
     parser.add_argument("--rebuild", action="store_true")
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="skip a run whose directory holds a completed result for the same artifact "
+        "and derived schedule",
+    )
+    parser.add_argument(
+        "--max-seconds",
+        type=float,
+        help="stop cleanly between runs after this many seconds; never mid-run",
+    )
+    parser.add_argument("--min-free-bytes", type=int, default=2 * 1024**3)
     parser.add_argument("--probe", action="store_true")
     parser.add_argument("--random-baseline", action="store_true")
     parser.add_argument("--baseline-seeds", type=int, default=10)
@@ -398,6 +550,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--probe-layer-grid",
         action="store_true",
         help="probe every layer and both poolings; off by default to keep sweeps fast",
+    )
+    parser.add_argument(
+        "--probe-input-corruption",
+        choices=("clean", "mask"),
+        default="clean",
+        help="probe on clean text, or on deterministically masked text to test the "
+        "train/evaluation mismatch hypothesis",
     )
     return parser
 

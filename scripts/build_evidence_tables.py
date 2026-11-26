@@ -39,6 +39,7 @@ CONFIG_FOR_LABEL = {
     "L": "configs/latent_l_noise.json",
     "M": "configs/mlm_m_small_head.json",
     "A2": "configs/latent_a2_v2.json",
+    "B2": "configs/latent_b2_v2.json",
     "C2": "configs/mlm_c2_v2.json",
 }
 DEFAULT_RESULTS = (

@@ -28,13 +28,19 @@ import random
 import sys
 from collections.abc import Iterable, Sequence
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
 import torch
 from torch import Tensor
 
-from src.train import load_exported_student  # noqa: F401  (re-exported for callers)
+if __package__ in (None, ""):
+    # Running as `python scripts/run_probe.py` puts scripts/ on sys.path, so `import src`
+    # fails without this. The Kaggle kernel papered over it with PYTHONPATH; this fixes it.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from src.train import load_exported_student
 
 PROBE_DATASET = "fancyzhx/ag_news"
 AG_NEWS_LABELS = ("World", "Sports", "Business", "Sci/Tech")
@@ -157,17 +163,31 @@ def extract_feature_matrix(
     device: torch.device,
     special_token_ids: Iterable[int],
     layer_grid: bool = True,
+    input_corruption: str = "clean",
+    mask_ratio: float = 0.15,
+    mask_token_id: int = 103,
+    corruption_seed: int = 0,
 ) -> dict[str, np.ndarray]:
-    """Frozen, eval-mode, uncorrupted features for every encoder layer.
+    """Frozen, eval-mode features for every encoder layer.
 
     Returns ``layer_<n>_mean`` for all layers, plus ``layer_<n>_cls`` when
     ``layer_grid`` is set. Layer numbering is 1-based over post-encoder states;
     the embedding output is not a layer and is not probed.
+
+    ``input_corruption='mask'`` feeds the encoder a deterministically masked sequence while
+    the *pooling mask* is still built from the original ids. That keeps the pooled token set
+    identical between clean and masked runs, so the comparison isolates the encoder's input
+    rather than changing which tokens are averaged.
     """
+    from src.data import mask_tokens_independent
     from src.evaluate import masked_mean_pooling
 
+    if input_corruption not in {"clean", "mask"}:
+        raise ValueError("input_corruption must be 'clean' or 'mask'")
     model.eval()
     special = set(int(item) for item in special_token_ids)
+    special_tensor = torch.tensor(sorted(special), dtype=torch.long)
+    generator = torch.Generator().manual_seed(corruption_seed)
     chunks: dict[str, list[Tensor]] = {}
     for start in range(0, len(texts), batch_size):
         chunk = list(texts[start : start + batch_size])
@@ -179,11 +199,25 @@ def extract_feature_matrix(
             return_attention_mask=True,
             return_tensors="pt",
         )
-        input_ids = encoded["input_ids"].to(device)
+        original_ids = encoded["input_ids"].to(device)
         attention_mask = encoded["attention_mask"].to(device).bool()
-        output = model(input_ids, attention_mask, return_hidden_states=True)
+        model_ids = original_ids
+        if input_corruption == "mask":
+            eligible = attention_mask & ~torch.isin(original_ids, special_tensor.to(device))
+            masked_rows = []
+            for row_ids, row_eligible in zip(original_ids, eligible, strict=True):
+                masked_row, _ = mask_tokens_independent(
+                    row_ids,
+                    row_eligible,
+                    mask_ratio=mask_ratio,
+                    mask_token_id=mask_token_id,
+                    generator=generator,
+                )
+                masked_rows.append(masked_row)
+            model_ids = torch.stack(masked_rows, dim=0)
+        output = model(model_ids, attention_mask, return_hidden_states=True)
         for index, state in enumerate(output.hidden_states, start=1):
-            pooled = masked_mean_pooling(state, attention_mask, input_ids, special)
+            pooled = masked_mean_pooling(state, attention_mask, original_ids, special)
             chunks.setdefault(f"layer_{index}_mean", []).append(
                 pooled.detach().to("cpu", dtype=torch.float32)
             )
@@ -222,6 +256,7 @@ def probe_student(
     seed: int,
     device: torch.device,
     layer_grid: bool = True,
+    input_corruption: str = "clean",
 ) -> dict[str, Any]:
     from src.data import get_bert_tokenizer
 
@@ -240,6 +275,8 @@ def probe_student(
         device=device,
         special_token_ids=tokenizer.all_special_ids,
         layer_grid=layer_grid,
+        input_corruption=input_corruption,
+        corruption_seed=seed,
     )
     test_features = extract_feature_matrix(
         model,
@@ -250,6 +287,8 @@ def probe_student(
         device=device,
         special_token_ids=tokenizer.all_special_ids,
         layer_grid=layer_grid,
+        input_corruption=input_corruption,
+        corruption_seed=seed,
     )
     by_layer = {
         name: probe_features(
@@ -260,6 +299,28 @@ def probe_student(
             seed=seed,
         )
         for name in features
+    }
+    layers = len([name for name in features if name.endswith("_mean")])
+    final = by_layer[f"layer_{layers}_mean"]
+    return {
+        "student": str(student_path),
+        "student_sha256": hashlib.sha256(student_path.read_bytes()).hexdigest(),
+        "train_meta": train_meta,
+        "test_meta": test_meta,
+        "feature_shape": list(features[f"layer_{layers}_mean"].shape),
+        "pooling": (
+            "masked mean over valid, non-special tokens of the original ids; frozen eval mode"
+        ),
+        "input_corruption": input_corruption,
+        "layers": layers,
+        "labels": list(AG_NEWS_LABELS),
+        "accuracy": final["accuracy"],
+        "macro_f1": final["macro_f1"],
+        "majority_baseline": final["majority_baseline"],
+        "train_samples": final["train_samples"],
+        "test_samples": final["test_samples"],
+        "num_classes": final["num_classes"],
+        "layer_pooling": by_layer,
     }
     layers = len([name for name in features if name.endswith("_mean")])
     final = by_layer[f"layer_{layers}_mean"]
@@ -294,6 +355,7 @@ def random_baseline(
     max_length: int,
     batch_size: int,
     device: torch.device,
+    input_corruption: str = "clean",
 ) -> dict[str, Any]:
     """Random-init encoders of the same architecture, one per seed.
 
@@ -323,6 +385,8 @@ def random_baseline(
             device=device,
             special_token_ids=tokenizer.all_special_ids,
             layer_grid=False,
+            input_corruption=input_corruption,
+            corruption_seed=int(seeds[0]),
         )
         test_features = extract_feature_matrix(
             model,
@@ -333,6 +397,8 @@ def random_baseline(
             device=device,
             special_token_ids=tokenizer.all_special_ids,
             layer_grid=False,
+            input_corruption=input_corruption,
+            corruption_seed=int(seeds[0]),
         )
         name = f"layer_{cfg.layers}_mean"
         feature_shape = list(features[name].shape)
@@ -366,6 +432,7 @@ def random_baseline(
         "train_meta": train_meta,
         "test_meta": test_meta,
         "feature_shape": feature_shape,
+        "input_corruption": input_corruption,
         "pooling": (
             "masked mean over valid, non-special tokens; final layer; frozen eval mode"
         ),
@@ -412,9 +479,110 @@ def lexical_baseline(
     }
 
 
+class _HiddenStateAdapter(torch.nn.Module):
+    """Expose a Hugging Face encoder through the project's encoder output surface."""
+
+    def __init__(self, model: torch.nn.Module) -> None:
+        super().__init__()
+        self.model = model
+
+    def forward(
+        self, input_ids: Tensor, attention_mask: Tensor, return_hidden_states: bool = False
+    ) -> SimpleNamespace:
+        del return_hidden_states
+        output = self.model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            output_hidden_states=True,
+        )
+        # Hugging Face includes the embedding output at index 0; the project's convention is
+        # post-encoder layers only, so it is dropped here rather than downstream.
+        return SimpleNamespace(
+            last_hidden_state=output.last_hidden_state,
+            hidden_states=tuple(output.hidden_states[1:]),
+        )
+
+
+def pretrained_baseline(
+    *,
+    model_name: str,
+    train: Split,
+    test: Split,
+    max_length: int,
+    batch_size: int,
+    device: torch.device,
+    seed: int,
+    input_corruption: str = "clean",
+    layer_grid: bool = False,
+) -> dict[str, Any]:
+    """A frozen pretrained encoder through the identical probe: the instrument ceiling.
+
+    This is an **evaluation diagnostic**. Its weights never enter the project encoder and it
+    is never a project condition. It answers one question: can this readout detect features
+    that are known to be good? If it cannot, no student comparison below it is interpretable.
+    """
+    from transformers import AutoModel, AutoTokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    encoder = AutoModel.from_pretrained(model_name).to(device).eval()
+    encoder.requires_grad_(False)
+    model = _HiddenStateAdapter(encoder)
+    train_texts, train_labels, train_meta = train
+    test_texts, test_labels, test_meta = test
+    features = extract_feature_matrix(
+        model,
+        tokenizer,
+        train_texts,
+        max_length=max_length,
+        batch_size=batch_size,
+        device=device,
+        special_token_ids=tokenizer.all_special_ids,
+        layer_grid=layer_grid,
+        input_corruption=input_corruption,
+        corruption_seed=seed,
+    )
+    test_features = extract_feature_matrix(
+        model,
+        tokenizer,
+        test_texts,
+        max_length=max_length,
+        batch_size=batch_size,
+        device=device,
+        special_token_ids=tokenizer.all_special_ids,
+        layer_grid=layer_grid,
+        input_corruption=input_corruption,
+        corruption_seed=seed,
+    )
+    by_layer = {
+        name: probe_features(
+            features[name],
+            np.asarray(train_labels),
+            test_features[name],
+            np.asarray(test_labels),
+            seed=seed,
+        )
+        for name in features
+    }
+    layers = len([name for name in features if name.endswith("_mean")])
+    final = by_layer[f"layer_{layers}_mean"]
+    return {
+        "role": "positive control: evaluation instrument only, never a project condition",
+        "model": model_name,
+        "layers": layers,
+        "feature_shape": list(features[f"layer_{layers}_mean"].shape),
+        "input_corruption": input_corruption,
+        "accuracy": final["accuracy"],
+        "macro_f1": final["macro_f1"],
+        "majority_baseline": final["majority_baseline"],
+        "train_meta": train_meta,
+        "test_meta": test_meta,
+        "layer_pooling": by_layer,
+    }
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Frozen AG News linear probe for student exports.")
-    parser.add_argument("--student", required=True, action="append", help="student.pt (repeatable)")
+    parser.add_argument("--student", action="append", help="student.pt (repeatable)")
     parser.add_argument("--out", required=True)
     parser.add_argument("--train-limit", type=int, default=4000)
     parser.add_argument("--test-limit", type=int, default=1000)
@@ -429,6 +597,18 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("stratified", "head"),
         help="head reproduces the earlier first-N rows for comparison",
     )
+    parser.add_argument(
+        "--input-corruption",
+        default="clean",
+        choices=("clean", "mask"),
+        help="probe clean text, or deterministically masked text, to test the "
+        "train/evaluation mismatch",
+    )
+    parser.add_argument(
+        "--pretrained-baseline",
+        help="positive control: a frozen pretrained encoder through the identical probe. "
+        "Evaluation instrument only; never a project condition.",
+    )
     parser.add_argument("--random-baseline", action="store_true")
     parser.add_argument("--baseline-seeds", type=int, default=10)
     parser.add_argument("--no-lexical-baseline", action="store_true")
@@ -439,6 +619,10 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> int:
     args = build_parser().parse_args()
 
+    if not args.student and not args.pretrained_baseline:
+        raise SystemExit("run_probe: pass --student and/or --pretrained-baseline")
+    if args.random_baseline and not args.student:
+        raise SystemExit("run_probe: --random-baseline needs at least one --student")
     if args.random_baseline and args.baseline_seeds < 1:
         raise SystemExit("--baseline-seeds must be positive")
     if args.device == "cuda" and not torch.cuda.is_available():
@@ -465,6 +649,7 @@ def main() -> int:
         "seed": args.seed,
         "probe": "frozen linear probe, StandardScaler + LogisticRegression fit on train split only",
         "split_strategy": args.split_strategy,
+        "input_corruption": args.input_corruption,
         "students": {},
         "not_run": [
             "hyperparameter search on the probe (deliberately fixed at C=1.0, max_iter=1000)",
@@ -472,7 +657,7 @@ def main() -> int:
         ],
     }
 
-    for path in args.student:
+    for path in args.student or []:
         student = Path(path)
         if not student.is_file():
             raise SystemExit(f"run_probe: missing student export {student}")
@@ -487,11 +672,26 @@ def main() -> int:
             seed=args.seed,
             device=device,
             layer_grid=not args.no_layer_grid,
+            input_corruption=args.input_corruption,
         )
 
     if not args.no_lexical_baseline:
         print("fitting TF-IDF lexical baseline ...", flush=True)
         report["lexical_baseline"] = lexical_baseline(train=train, test=test, seed=args.seed)
+
+    if args.pretrained_baseline:
+        print(f"probing positive control {args.pretrained_baseline} ...", flush=True)
+        report["positive_control"] = pretrained_baseline(
+            model_name=args.pretrained_baseline,
+            train=train,
+            test=test,
+            max_length=args.max_length,
+            batch_size=args.batch_size,
+            device=device,
+            seed=args.seed,
+            input_corruption=args.input_corruption,
+            layer_grid=not args.no_layer_grid,
+        )
 
     if args.random_baseline:
         first = next(iter(report["students"].values()))
@@ -510,6 +710,7 @@ def main() -> int:
             max_length=args.max_length,
             batch_size=args.batch_size,
             device=device,
+            input_corruption=args.input_corruption,
         )
 
     out = Path(args.out)
@@ -526,6 +727,10 @@ def main() -> int:
     if "lexical_baseline" in report:
         summary["lexical_baseline"] = {
             key: report["lexical_baseline"].get(key) for key in ("accuracy", "macro_f1")
+        }
+    if "positive_control" in report:
+        summary["positive_control"] = {
+            key: report["positive_control"].get(key) for key in ("accuracy", "macro_f1")
         }
     if "random_baseline" in report:
         summary["random_baseline"] = {

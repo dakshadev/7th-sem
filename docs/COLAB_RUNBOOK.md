@@ -123,7 +123,7 @@ cd /content/7th-sem
 OMP_NUM_THREADS=2 MKL_NUM_THREADS=2 python -m pytest -q
 ```
 
-Expect **98 passed, 2 skipped**. One skip is the CUDA-only resume test, the other is an
+Expect **104 passed, 2 skipped**. One skip is the CUDA-only resume test, the other is an
 integration-only test. On a working CUDA runtime the resume test should execute, so record the
 real output rather than assuming a count.
 

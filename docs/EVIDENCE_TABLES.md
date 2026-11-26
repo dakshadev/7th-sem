@@ -19,6 +19,7 @@ probe number and therefore cannot appear in the cost table below.
 | I | 11,005,952 | AttentionPredictor | 1,678,080 | 12,684,032 | yes | 4 |
 | J | 11,005,952 | AttentionPredictor | 1,678,080 | 12,684,032 | no | 4 |
 | A2 | 11,005,952 | AttentionPredictor | 1,678,080 | 12,684,032 | yes | none — never run |
+| B2 | 11,005,952 | LinearPredictor | 65,792 | 11,071,744 | yes | none — never run |
 | C2 | 11,005,952 | MLMHead | 7,910,458 | 18,916,410 | no | none — never run |
 | D | 11,005,952 | AttentionPredictor | 1,678,080 | 12,684,032 | yes | 1 |
 | E | 11,005,952 | AttentionPredictor | 1,678,080 | 12,684,032 | yes | 1 |

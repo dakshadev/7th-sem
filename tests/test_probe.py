@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 
@@ -205,6 +207,83 @@ def test_lexical_baseline_separates_a_toy_task() -> None:
     assert result["accuracy"] >= 0.9
     assert result["num_features"] > 0
     assert result["fit_on"].startswith("probe-train only")
+
+
+def test_masked_input_changes_features_and_is_deterministic() -> None:
+    model = SmallEncoder(TINY).eval()
+    texts = ["the quick fox", "a slow dog", "another line"]
+    common = dict(
+        max_length=16,
+        batch_size=2,
+        device=torch.device("cpu"),
+        special_token_ids=TINY.special_token_ids,
+        layer_grid=False,
+    )
+    clean = run_probe.extract_feature_matrix(model, TinyTokenizer(), texts, **common)
+    masked = run_probe.extract_feature_matrix(
+        model,
+        TinyTokenizer(),
+        texts,
+        input_corruption="mask",
+        corruption_seed=3,
+        mask_token_id=3,
+        **common,
+    )
+    again = run_probe.extract_feature_matrix(
+        model,
+        TinyTokenizer(),
+        texts,
+        input_corruption="mask",
+        corruption_seed=3,
+        mask_token_id=3,
+        **common,
+    )
+    assert set(clean) == set(masked)
+    for key in clean:
+        assert clean[key].shape == masked[key].shape
+        assert not np.allclose(clean[key], masked[key])
+        assert np.allclose(masked[key], again[key])
+
+
+class _FakeHFEncoder(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.embedding = torch.nn.Embedding(TINY.vocab_size, 8)
+        self.projection = torch.nn.Linear(8, 8)
+
+    def forward(self, input_ids, attention_mask, output_hidden_states=False):
+        del attention_mask, output_hidden_states
+        hidden = self.projection(self.embedding(input_ids))
+        return SimpleNamespace(
+            last_hidden_state=hidden, hidden_states=(hidden, hidden, hidden)
+        )
+
+
+def test_hf_adapter_drops_the_embedding_state() -> None:
+    adapter = run_probe._HiddenStateAdapter(_FakeHFEncoder())
+    ids = torch.randint(0, TINY.vocab_size, (2, 5))
+    mask = torch.ones(2, 5, dtype=torch.bool)
+    output = adapter(ids, mask, return_hidden_states=True)
+    assert output.last_hidden_state.shape == (2, 5, 8)
+    assert len(output.hidden_states) == 2
+
+
+def test_probe_cli_runs_as_a_script() -> None:
+    """`python scripts/run_probe.py` must work: scripts/ is sys.path[0], so `import src` needs
+    the same bootstrap the other entry points have. This failed before the P0 fix."""
+    import subprocess
+    import sys
+
+    root = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, str(root / "scripts" / "run_probe.py"), "--help"],
+        capture_output=True,
+        text=True,
+        cwd=root,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--input-corruption" in result.stdout
+    assert "--pretrained-baseline" in result.stdout
 
 
 def test_evidence_tables_summarise_runs_and_params() -> None:

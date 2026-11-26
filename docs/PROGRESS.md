@@ -3,7 +3,7 @@
 ## Bootstrap — 27 October 2026
 
 > **Reading this log:** entries are dated and kept as written. A test count or status line
-> inside an entry describes that date, not the current tree (the suite is now 98 passed,
+> inside an entry describes that date, not the current tree (the suite is now 104 passed,
 > 2 skipped; GPU runs exist). For the current state read README.md.
 > `docs/DEVELOPMENT_EVIDENCE.md` and `docs/PERSON1_FINAL_SUMMARY.md` were deleted on
 > 27 Oct 2026; entries below that cite them describe the state at the time.
@@ -163,7 +163,7 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 - Implemented files: `src/masking.py` (new), `src/data.py`, `src/train.py`, `src/config.py`, `scripts/build_batches.py`, `scripts/run_pilot.py`, `scripts/run_sweep.py`, all ten `configs/*.json`, `docs/INTERFACES.md`, `docs/EXPERIMENT_PROTOCOL.md`, `README.md`, `AGENTS.md`, `tests/test_masking.py` (new), `tests/test_training.py`, `tests/test_config.py`, `tests/test_integration.py`.
 - Exact command and environment: CPython 3.14, torch 2.14.0, pytest 9.1.1, ruff 0.14.14 in the isolated scratch venv; `HF_HUB_OFFLINE=1 python -m pytest -q`; `python -m ruff check src tests scripts`.
 - Actual test/integration outcome: **85 passed, 2 skipped**. Ruff check clean.
-- What changed: (1) `build_batches` shuffles records before chunking with a separate seeded order generator and records it in the manifest; `--no-shuffle` restores corpus order. (2) `MaskResampler` rebuilds `masked_input_ids` and `prediction_mask` per batch from a seeded generator; `run_batches(remask=...)` stays adapter-neutral; `mask.resample_in_loop` is true in every config, so two seeds no longer share one mask realisation. (3) `bert_80_10_10` corruption is implemented and recorded in the manifest. (4) `TeacherConfig.ema_decay_end` ramps the teacher decay linearly and metadata records start/end horizons. (5) `ModelConfig.special_token_ids` now includes `[UNK]` (100), matching the data contract and the resampler's eligibility rule.
+- What changed: (1) `build_batches` shuffles records before chunking with a separate seeded order generator and records it in the manifest; `--no-shuffle` restores corpus order. (2) `MaskResampler` rebuilds `masked_input_ids` and `prediction_mask` per batch from a seeded generator; `run_batches(remask=...)` stays adapter-neutral; `mask.resample_in_loop` was set in every config, so two seeds no longer share one mask realisation. **Correction (26 Nov 2026):** those config edits were reverted in `5a1c383`; the flag is true only in A2/B2/C2, and A/B/D–I keep artifact masks. (3) `bert_80_10_10` corruption is implemented and recorded in the manifest. (4) `TeacherConfig.ema_decay_end` ramps the teacher decay linearly and metadata records start/end horizons. (5) `ModelConfig.special_token_ids` now includes `[UNK]` (100), matching the data contract and the resampler's eligibility rule.
 - Known limitations: the resampler's generator stream is not part of the training checkpoint, so a resumed run draws fresh masks; the batch sequence still makes one pass, so per-epoch resampling matters only once a budget exceeds the artifact. No GPU run was executed in this entry.
 - Next action: P3 controls (fixed/random-target, head-capacity, teacher-target geometry), then a GPU run with the new path.
 
@@ -231,5 +231,15 @@ resolved to nothing.
 Restored to `docs/PROGRESS.md`. If a future session finds a root-level `PROGRESS.md`, that is
 the same mistake: move it back rather than updating the 31 references.
 
-**Test count, authoritative for the current tree:** 98 passed, 2 skipped (97 `def test_`
+## Campaign P0 — instrument and pipeline readiness — 26 November 2026
+
+- Date / author / branch / commit: 26 Nov 2026 / campaign P0 / `audit/project-review` / commit containing this entry.
+- Implemented files: `configs/latent_b2_v2.json` (new), `scripts/run_pilot.py`, `scripts/build_evidence_tables.py`, `scripts/run_sweep.py`, `scripts/run_probe.py`, `tests/test_config.py`, `tests/test_integration.py`, `tests/test_probe.py`, `README.md`, `AGENTS.md`, `docs/COLAB_RUNBOOK.md`, `docs/EVIDENCE_TABLES.md` (regenerated).
+- Exact command and environment: CPython 3.14, torch 2.14.0, pytest 9.1.1, ruff 0.14.14, scikit-learn 1.9.1 in the isolated scratch venv; `HF_HUB_OFFLINE=1 python -m pytest -q`; `python -m ruff check src tests scripts`; `python scripts/build_evidence_tables.py --out docs/EVIDENCE_TABLES.md`.
+- Actual test/integration outcome: **104 passed, 2 skipped**. Ruff check clean. The sweep resume, time-guard and preflight paths are exercised by unit tests, not by a GPU run.
+- What changed: (1) B2 added so the fixed path has the same C/A/B coverage as the record; a config test asserts A2/B2/C2 differ from A/B/C only by `mask.resample_in_loop` and, for A2/B2, `teacher.ema_decay_end` (`max_span_length: 5` is explicit but equals the default, so it changes nothing). (2) `run_sweep` writes the report before the first run and after every run, gains `--resume` (skip only when config, derived `max_updates` and artifact hash all match), `--max-seconds` (stop between runs, never mid-run) and a preflight covering writability, free disk, RAM and device. (3) `run_probe` gains `--input-corruption {clean,mask}`, which builds the pooling mask from the original ids so the pooled token set is unchanged, and `--pretrained-baseline MODEL`, a labelled positive control that never enters the project encoder. (4) `AGENTS.md` rule 2 names that instrument exception. (5) `run_probe.py` gained the `sys.path` bootstrap the other entry points already had: running it as a script put `scripts/` first on the path, so `import src.train` failed and the documented probe command could not start. A subprocess regression test now runs the CLI.
+- Known limitations: no training run was executed; the positive control has not been downloaded or probed; `CAMPAIGN_PLAN.md` is untracked by request; `run_sweep` still makes one pass over the artifact, so a budget above 6.48M tokens stops at stream end.
+- Next action: Stage 0 on Kaggle — BERT ceiling, TF-IDF floor and the 10-seed random band — before any training spend.
+
+**Test count, authoritative for the current tree:** 104 passed, 2 skipped (103 `def test_`
 functions; parametrisation adds one, and the count above is what `python3 -m pytest -q` prints).

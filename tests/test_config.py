@@ -236,6 +236,39 @@ def test_mask_and_ema_extensions_validate() -> None:
         TeacherConfig(ema_decay=0.9, ema_decay_end=1.0)
 
 
+def _flatten(value: object, prefix: str = "") -> dict[str, object]:
+    items: dict[str, object] = {}
+    if isinstance(value, dict):
+        for key, item in value.items():
+            items.update(_flatten(item, f"{prefix}.{key}" if prefix else str(key)))
+    else:
+        items[prefix] = value
+    return items
+
+
+def test_v2_configs_are_the_recorded_configs_plus_the_training_path() -> None:
+    """A2/B2/C2 must differ from A/B/C only by the path changes, or the comparison is confounded."""
+    from src.config import load_config
+
+    pairs = {
+        "A2": ("configs/latent_a.json", "configs/latent_a2_v2.json"),
+        "B2": ("configs/latent_b.json", "configs/latent_b2_v2.json"),
+        "C2": ("configs/mlm_c.json", "configs/mlm_c2_v2.json"),
+    }
+    for label, (recorded_path, v2_path) in pairs.items():
+        recorded = _flatten(load_config(recorded_path).to_dict())
+        v2 = _flatten(load_config(v2_path).to_dict())
+        assert set(recorded) == set(v2)
+        differing = {key for key in recorded if recorded[key] != v2[key]}
+        # max_span_length is written explicitly in the v2 files but equals the dataclass
+        # default, so the only behavioural deltas are the path switches themselves.
+        expected = {"objective.label", "mask.resample_in_loop"}
+        if label != "C2":
+            expected.add("teacher.ema_decay_end")
+        assert differing == expected, (label, sorted(differing))
+        assert v2["objective.label"] == label
+
+
 def test_teacher_mode_validation() -> None:
     import pytest
 

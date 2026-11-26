@@ -500,6 +500,74 @@ def test_sweep_derives_schedule_from_artifact_and_records_it(
     assert any("575" in item for item in report["limitations"])
 
 
+def _sweep_args(tmp_path: Path, *extra: str) -> list[str]:
+    config_dir = tmp_path / "configs"
+    if not config_dir.exists():
+        config_dir.mkdir()
+        write_sweep_config(config_dir, "mlm")
+    return [
+        "--output",
+        str(tmp_path / "runs"),
+        "--out",
+        str(tmp_path / "sweep.json"),
+        "--variants",
+        "mlm",
+        "--seeds",
+        "7",
+        "--budgets",
+        "1200",
+        "--config-dir",
+        str(config_dir),
+        "--offline-fixture",
+        str(write_fixture(tmp_path, TEXTS * 40)),
+        "--dataset",
+        "offline-sweep",
+        "--config-name",
+        "fixture",
+        "--split",
+        "train",
+        "--tokenizer",
+        "stub-tokenizer",
+        "--max-records",
+        "240",
+        "--batch-size",
+        "2",
+        "--artifact-seed",
+        "5",
+        "--device",
+        "cpu",
+        *extra,
+    ]
+
+
+def test_sweep_resume_skips_a_completed_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_person2_stubs(monkeypatch)
+    first = run_sweep.main(_sweep_args(tmp_path))
+    assert first["runs"][0]["reused"] is False
+    metrics = tmp_path / "runs" / first["runs"][0]["run"] / "metrics.jsonl"
+    lines = len(metrics.read_text(encoding="utf-8").splitlines())
+
+    second = run_sweep.main(_sweep_args(tmp_path, "--resume"))
+    assert second["runs"][0]["reused"] is True
+    assert second["runs"][0]["updates"] == first["runs"][0]["updates"]
+    assert len(metrics.read_text(encoding="utf-8").splitlines()) == lines
+
+
+def test_sweep_time_guard_stops_between_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    install_person2_stubs(monkeypatch)
+    report = run_sweep.main(_sweep_args(tmp_path, "--max-seconds", "0"))
+    assert report["runs"] == []
+    assert report["stopped_reason"] == "max_seconds"
+    written = json.loads((tmp_path / "sweep.json").read_text(encoding="utf-8"))
+    assert written["stopped_reason"] == "max_seconds"
+    assert written["preflight"]["device"] == "cpu"
+    assert written["preflight"]["free_disk_bytes"] > 0
+
+
 def test_sweep_rejects_unknown_variants(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     install_person2_stubs(monkeypatch)
     with pytest.raises(SystemExit):

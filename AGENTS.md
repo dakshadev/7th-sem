@@ -7,7 +7,7 @@ docs/DATA_INTEGRITY.md and docs/PROGRESS.md, then the handoff matching the curre
 Inspect git status, branch, tracked files and recent commits first.
 
 `main` is the implemented tree, not a plan: the encoder, objectives, data pipeline, training
-loop, evaluation and tests exist, the suite is `98 passed, 2 skipped`, and results/ holds
+loop, evaluation and tests exist, the suite is `104 passed, 2 skipped`, and results/ holds
 measured runs. The docs describe that work. Still, run the suite before assuming a subsystem
 works (`python -m pytest -q`) and check docs/PROGRESS.md for the latest entry, which is the
 only place that records what was actually executed and when.
@@ -28,7 +28,7 @@ noise, and WikiText-2 being a prefix of WikiText-103).
 ## Non-negotiables
 
 1. No invented runs, losses, plots, accuracy, progress, literature claims or GPU-hour estimates presented as measured facts.
-2. Implement the small encoder from scratch. The pretrained BERT **tokenizer** is allowed; do not silently load pretrained encoder weights. Optional pretrained-BERT ambiguity analysis is separate and must be labelled.
+2. Implement the small encoder from scratch. The pretrained BERT **tokenizer** is allowed; do not silently load pretrained encoder weights. Optional pretrained-BERT ambiguity analysis is separate and must be labelled. A frozen pretrained encoder may also be run as a *labelled evaluation instrument* (the probe's positive control, `--pretrained-baseline`); its weights must never enter the project encoder or be reported as a project condition.
 3. Use shared data/configuration and comparable token budgets. A/B are recipe-inspired anchors, not faithful paper reproductions.
 4. Add deterministic CPU unit tests for implemented components. No network access in unit tests; separate dataset/GPU integration tests. Exercise code before calling it complete.
 5. Loss alone does not establish non-collapse or useful transfer. Report geometry and downstream evidence with limitations.

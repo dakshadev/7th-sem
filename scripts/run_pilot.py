@@ -42,6 +42,7 @@ CONFIG_BY_VARIANT = {
     # v2 conditions: the P2 training path (resampled masks, ramped EMA). The unsuffixed
     # configs above keep the recorded settings so their files stay traceable to results/.
     "latent_a2_v2": "configs/latent_a2_v2.json",
+    "latent_b2_v2": "configs/latent_b2_v2.json",
     "mlm_c2_v2": "configs/mlm_c2_v2.json",
 }
 # CLI name -> the run label recorded in the config. Labels are what appear in results.
@@ -60,6 +61,7 @@ VARIANT_LABEL = {
     "latent_l_noise": "L",
     "mlm_m_small_head": "M",
     "latent_a2_v2": "A2",
+    "latent_b2_v2": "B2",
     "mlm_c2_v2": "C2",
 }
 DEFAULT_OUTPUT_ROOT = Path("artifacts/person1")
