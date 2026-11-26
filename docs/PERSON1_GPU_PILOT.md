@@ -56,9 +56,9 @@ this pilot and are recorded in `docs/PERSON1_PROBE.md` and `docs/PERSON1_LONG_PI
 
 ## Test suite in the cloud runtime
 
-`python -m pytest -q` → **55 passed, 2 skipped** on the current tree. One skip is the CUDA-only
-resume test, the other an integration-only test. The count observed at commit `fbc93db` is
-recorded in `docs/PROGRESS.md`; the suite has grown since then.
+`python -m pytest -q` → **53 passed, 1 skipped** at commit `fbc93db`, the commit this pilot ran
+on. One skip is the CUDA-only resume test. Do not quote that count as the current tree: the
+suite has grown since (see `AGENTS.md` and `README.md` for the current number).
 
 ## Reproduce
 

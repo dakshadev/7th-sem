@@ -3,7 +3,7 @@
 ## Bootstrap — 27 October 2026
 
 > **Reading this log:** entries are dated and kept as written. A test count or status line
-> inside an entry describes that date, not the current tree (the suite is now 97 passed,
+> inside an entry describes that date, not the current tree (the suite is now 98 passed,
 > 2 skipped; GPU runs exist). For the current state read README.md.
 > `docs/DEVELOPMENT_EVIDENCE.md` and `docs/PERSON1_FINAL_SUMMARY.md` were deleted on
 > 27 Oct 2026; entries below that cite them describe the state at the time.
@@ -181,7 +181,7 @@ Do not mark literature, dataset analysis, training or evaluation completed just 
 
 - Date / author / branch / commit: 25 Nov 2026 / audit follow-up / `audit/project-review` / commit containing this entry.
 - Exact command and environment: CPython 3.13 (system), torch 2.11.0, pytest 9.1.1, ruff 0.14.14; `python3 -m pytest -q`; `python3 -m ruff check src tests scripts`; `HF_HUB_OFFLINE=1 python3 scripts/run_sweep.py --budgets 2000 --variants latent_a,latent_k_constant,mlm_m_small_head --offline-fixture <fixture>`; `python3 scripts/run_pilot.py --variant latent_a --max-updates 3`.
-- Actual test/integration outcome: **97 passed, 2 skipped**; ruff clean; both runner entry points executed end to end on a local fixture and wrote a sweep JSON and a run directory.
+- Actual test/integration outcome: **97 passed, 2 skipped**; ruff clean; both runner entry points executed end to end on a local fixture and wrote a sweep JSON and a run directory. (The suite is 98 now: the sklearn-import test was added in the environment entry below, after this one was written.)
 - Defects found and fixed in this pass:
   1. **Checkpoints written on `main` could not resume.** `ModelConfig.special_token_ids` gained `[UNK]` (100), and `_resume_semantics` compared the whole config, so every existing checkpoint was rejected with "checkpoint config is incompatible with this trainer". Fixed: the comparison is now a whitelist of fields that change parameter shapes, after filling defaults, so post-hoc keys (`mask.max_span_length`, `teacher.ema_decay_end`) and eligibility-only fields no longer block a resume while a real architecture or objective mismatch still does. Covered by three new tests in `tests/test_training.py`.
   2. **`scripts/run_sweep.py` aborted on any budget whose derived `max_updates` was below `warmup_updates`.** `OptimizerConfig` rejects `warmup_updates > max_updates`, so a small or smoke budget raised "optimizer learning rate and update counts must be valid" before training. Fixed by shortening the warm-up to fit; covered by a new test in `tests/test_integration.py`.
@@ -219,3 +219,17 @@ instead of the one with the dependencies, and died at collection.
 - Next action: pin the interpreter in the documented commands (a `.python-version` or a venv
   bootstrap in `docs/COLAB_RUNBOOK.md`) so a bare `python3` cannot silently select a bare
   interpreter.
+
+### This file's location is `docs/PROGRESS.md` — 26 November 2026
+
+`AGENTS.md` rule 10 and 31 references across the docs point at `docs/PROGRESS.md`. On 26 Nov
+2026 a working-tree move put it at the repository root as `PROGRESS.md`, committed as untracked
+alongside `docs/PROGRESS.md` showing as deleted. The content was intact and nothing was lost,
+but every documented path — including the one `AGENTS.md` tells a new assistant to read first —
+resolved to nothing.
+
+Restored to `docs/PROGRESS.md`. If a future session finds a root-level `PROGRESS.md`, that is
+the same mistake: move it back rather than updating the 31 references.
+
+**Test count, authoritative for the current tree:** 98 passed, 2 skipped (97 `def test_`
+functions; parametrisation adds one, and the count above is what `python3 -m pytest -q` prints).

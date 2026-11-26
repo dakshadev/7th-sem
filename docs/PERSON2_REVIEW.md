@@ -74,7 +74,7 @@ training runs. The budget-driven runs use `stop_reason: budget` and are document
 2. Stop installing `torch` from `requirements.txt` on cloud GPU runtimes.
 3. Replace the fake restart test with a real session-restart recovery check.
 4. Re-pin `PINNED_COMMIT` to the committed revision actually used for the run and record it in
-   `PROGRESS.md` with measured output.
+   `docs/PROGRESS.md` with measured output.
 
 ## Status
 
